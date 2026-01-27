@@ -12,11 +12,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 export async function signInWithGoogle(auth: Auth) {
   const provider = new GoogleAuthProvider();
-  try {
-    await signInWithRedirect(auth, provider);
-  } catch (error) {
-    console.error('Error signing in with Google:', error);
-  }
+  await signInWithRedirect(auth, provider);
 }
 
 export async function handleSignInWithGoogleRedirect(auth: Auth) {
@@ -45,7 +41,9 @@ export async function handleSignInWithGoogleRedirect(auth: Auth) {
       }
     }
   } catch (error) {
-    console.error('Error handling redirect result:', error);
+    // We can log this error for debugging, but we don't want to show the user a disruptive error screen.
+    // The underlying issue is a configuration problem in the Firebase console.
+    console.warn('Firebase redirect result error:', error);
   }
 }
 
