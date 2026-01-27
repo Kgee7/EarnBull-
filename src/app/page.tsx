@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/logo';
@@ -8,7 +7,7 @@ import { GoogleIcon } from '@/components/icons/google-icon';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { signInWithGoogle } from '@/firebase/auth/utils';
+import { signInWithGoogle, handleSignInWithGoogleRedirect } from '@/firebase/auth/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -50,6 +49,12 @@ export default function LoginPage() {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (auth) {
+      handleSignInWithGoogleRedirect(auth);
+    }
+  }, [auth]);
 
   const handleSignIn = async () => {
     if (auth) {
