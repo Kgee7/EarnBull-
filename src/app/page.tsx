@@ -7,7 +7,7 @@ import { GoogleIcon } from '@/components/icons/google-icon';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { signInWithGoogle, handleSignInWithGoogleRedirect } from '@/firebase/auth/utils';
+import { signInWithGoogle } from '@/firebase/auth/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -49,12 +49,6 @@ export default function LoginPage() {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    if (auth) {
-      handleSignInWithGoogleRedirect(auth);
-    }
-  }, [auth]);
 
   const handleSignIn = async () => {
     if (auth) {
