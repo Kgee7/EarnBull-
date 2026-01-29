@@ -1,9 +1,165 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated data,
+ * including profiles, transactions, and activity logs, is nested within a user-specific document tree.
+ * This ensures that users can only access their own information, providing strong data privacy and
+ * security by default.
+ *
+ * Data Structure: The entire data model is hierarchical, rooted at the top-level `/users` collection.
+ * Each user's data is stored under `/users/{userId}`, where `{userId}` is the user's unique
+ * authentication ID. All related data, such as `bullCoinTransactions`, `withdrawalRequests`, and
+ * `dailyStepCounts`, are stored in subcollections under this path.
+ *
+ * Key Security Decisions:
+ * - Deny-All Default: Access is implicitly denied unless explicitly granted by a rule.
+ * - Strict Ownership: All read and write operations are gated by checking if the authenticated user's
+ *   UID matches the `{userId}` in the document path.
+ * - No User Listing: To protect user privacy, it is not possible to list all documents in the
+ *   top-level `/users` collection.
+ * - Profile Deletion Disabled: User profile deletion is disabled in the rules as a safety precaution.
+ *   This is typically a sensitive operation that should be handled by a trusted server process.
+ *
+ * Denormalization for Authorization: This ruleset relies on the path structure (`/users/{userId}`)
+ * for authorization, which is a highly performant pattern. Additionally, it mandates that all documents
+ * created within a user's subcollection (e.g., a BullCoinTransaction) must contain a `userId` field
+ * matching the path. This ensures relational integrity without costly `get()` calls and makes
+ * ownership explicit within the data itself.
+ *
+ * Structural Segregation: All user-specific, private data is segregated into subcollections under the
+ * user's primary document. This is a secure and efficient way to manage user data, as it allows
+ * for safe list operations within a user's own data scope without risk of exposing other users' data.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write their own profile
+
+    // Helper Functions for Reusable Logic
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user is the owner of the document.
+     * @param userId The UID of the user to check against.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if a document exists. Used for safe updates and deletes.
+     */
+    function documentExists() {
+      return resource != null;
+    }
+
+    /**
+     * Checks if the user is the owner of an existing document.
+     * This is the standard check for all update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && documentExists();
+    }
+
+    /**
+     * Validates a user profile on creation.
+     * Ensures the user is signed in and the document ID matches their auth UID.
+     */
+    function isCreatingValidUserProfile(userId) {
+      return isOwner(userId) && request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates a user profile on update.
+     * Ensures the user owns the existing document and that the `id` field remains unchanged.
+     */
+    function isUpdatingValidUserProfile(userId) {
+      return isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates subcollection documents (transactions, requests, etc.) on creation.
+     * Ensures the owner is creating the document and that the internal `userId` field
+     * matches the path, establishing a permanent ownership link.
+     */
+    function isCreatingValidSubcollectionDoc(userId) {
+      return isOwner(userId) && request.resource.data.userId == userId;
+    }
+
+    /**
+     * Validates subcollection documents on update.
+     * Ensures the owner is updating the document and that the `userId` field is immutable.
+     */
+    function isUpdatingValidSubcollectionDoc(userId) {
+      return isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * @description Rules for the collection of all user profiles.
+     * @path /users
+     * @allow (none) - This rule block is for denying collection-wide reads.
+     * @deny An unauthenticated user tries to list all users.
+     * @principle Prevents data leakage and protects user privacy by disallowing enumeration of all users in the system.
+     */
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      /**
+       * @description A user can create their own profile, and read or update it. Deletion is disallowed.
+       * @path /users/{userId}
+       * @allow (create) An authenticated user with UID 'user_abc' creates a document at `/users/user_abc`.
+       * @deny (update) A user with UID 'user_xyz' tries to update a document at `/users/user_abc`.
+       * @principle Enforces Self-Creation and Ownership for a user's root document.
+       */
+      allow get: if isOwner(userId);
+      allow list: if false; // Explicitly deny listing the /users collection for privacy.
+      allow create: if isCreatingValidUserProfile(userId);
+      allow update: if isUpdatingValidUserProfile(userId);
+      allow delete: if false; // Deleting a user profile is a sensitive, destructive action. Disable by default.
+
+      /**
+       * @description A user can manage their own BullCoin transactions.
+       * @path /users/{userId}/bullCoinTransactions/{transactionId}
+       * @allow (create) User 'user_abc' creates a new transaction document in their own `bullCoinTransactions` subcollection.
+       * @deny (get) User 'user_xyz' tries to read a transaction from `/users/user_abc/bullCoinTransactions/...`.
+       * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
+       */
+      match /bullCoinTransactions/{transactionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isCreatingValidSubcollectionDoc(userId);
+        allow update: if isUpdatingValidSubcollectionDoc(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description A user can manage their own withdrawal requests.
+       * @path /users/{userId}/withdrawalRequests/{requestId}
+       * @allow (list) User 'user_abc' lists all documents in their own `withdrawalRequests` subcollection.
+       * @deny (create) User 'user_xyz' tries to create a withdrawal request under another user's profile.
+       * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
+       */
+      match /withdrawalRequests/{requestId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isCreatingValidSubcollectionDoc(userId);
+        allow update: if isUpdatingValidSubcollectionDoc(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description A user can manage their own daily step count records.
+       * @path /users/{userId}/dailyStepCounts/{stepCountId}
+       * @allow (delete) User 'user_abc' deletes one of their own step count records.
+       * @deny (update) User 'user_xyz' tries to modify a step count record for user 'user_abc'.
+       * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
+       */
+      match /dailyStepCounts/{stepCountId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isCreatingValidSubcollectionDoc(userId);
+        allow update: if isUpdatingValidSubcollectionDoc(userId);
+        allow delete: if isExistingOwner(userId);
+      }
     }
   }
 }

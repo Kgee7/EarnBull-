@@ -1,39 +1,251 @@
 {
   "entities": {
     "UserProfile": {
-      "title": "User Profile",
-      "description": "Represents a user's public profile.",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
       "type": "object",
+      "description": "Represents a user profile in the EarnBull application.",
       "properties": {
-        "displayName": {
+        "id": {
           "type": "string",
-          "description": "The user's display name."
+          "description": "Unique identifier for the user profile."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The user's Google ID, used for authentication."
         },
         "email": {
           "type": "string",
-          "format": "email",
-          "description": "The user's email address."
+          "description": "User's email address.",
+          "format": "email"
         },
-        "photoURL": {
+        "displayName": {
           "type": "string",
-          "format": "uri",
-          "description": "URL of the user's profile picture."
+          "description": "User's display name."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Date and time the user profile was created.",
+          "format": "date-time"
         }
       },
-      "required": ["displayName", "email"]
+      "required": [
+        "id",
+        "googleId",
+        "email",
+        "displayName",
+        "creationDate"
+      ]
+    },
+    "BullCoinTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BullCoinTransaction",
+      "type": "object",
+      "description": "Represents a Bull Coin transaction, either earning or spending.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Bull Coin transaction."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N BullCoinTransaction)"
+        },
+        "transactionDate": {
+          "type": "string",
+          "description": "Date and time of the transaction.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of Bull Coins involved in the transaction (positive for earning, negative for spending)."
+        },
+        "transactionType": {
+          "type": "string",
+          "description": "Type of transaction (e.g., 'steps', 'conversion', 'withdrawal')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of why the transaction occurred."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "transactionDate",
+        "amount",
+        "transactionType",
+        "description"
+      ]
+    },
+    "WithdrawalRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WithdrawalRequest",
+      "type": "object",
+      "description": "Represents a user's request to withdraw funds.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the withdrawal request."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N WithdrawalRequest)"
+        },
+        "requestDate": {
+          "type": "string",
+          "description": "Date and time the withdrawal request was made.",
+          "format": "date-time"
+        },
+        "amountUSD": {
+          "type": "number",
+          "description": "Amount requested for withdrawal in USD."
+        },
+        "amountGHS": {
+          "type": "number",
+          "description": "Amount to be withdrawn in GHS."
+        },
+        "exchangeRate": {
+          "type": "number",
+          "description": "The exchange rate from USD to GHS at the time of the withdrawal request."
+        },
+        "momoNumber": {
+          "type": "string",
+          "description": "User's MTN Mobile Money number."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the withdrawal request (e.g., 'pending', 'approved', 'rejected')."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "requestDate",
+        "amountUSD",
+        "amountGHS",
+        "exchangeRate",
+        "momoNumber",
+        "status"
+      ]
+    },
+    "DailyStepCount": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyStepCount",
+      "type": "object",
+      "description": "Stores the daily step count for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the daily step count record."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N DailyStepCount)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date for which the step count is recorded (YYYY-MM-DD).",
+          "format": "date"
+        },
+        "stepCount": {
+          "type": "number",
+          "description": "The number of steps taken on the given date."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "stepCount"
+      ]
     }
   },
   "auth": {
     "providers": [
-      "google.com"
+      "password",
+      "anonymous"
     ]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": {
-        "$ref": "#/backend/entities/UserProfile"
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profiles. The `userId` is the user's unique ID obtained from Google Authentication.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, derived from their Google Authentication ID."
+            }
+          ]
+        }
       },
-      "description": "Stores user profile information."
-    }
+      {
+        "path": "/users/{userId}/bullCoinTransactions/{transactionId}",
+        "definition": {
+          "entityName": "BullCoinTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/BullCoinTransaction"
+          },
+          "description": "Stores Bull Coin transactions for each user.  The `userId` corresponds to the user's unique ID, ensuring only the user can access their transaction history.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, matching the user profile ID."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for the BullCoin transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/withdrawalRequests/{requestId}",
+        "definition": {
+          "entityName": "WithdrawalRequest",
+          "schema": {
+            "$ref": "#/backend/entities/WithdrawalRequest"
+          },
+          "description": "Stores withdrawal requests made by each user. The `userId` ensures that only the user can view or create their withdrawal requests.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, matching the user profile ID."
+            },
+            {
+              "name": "requestId",
+              "description": "The unique identifier for the withdrawal request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/dailyStepCounts/{stepCountId}",
+        "definition": {
+          "entityName": "DailyStepCount",
+          "schema": {
+            "$ref": "#/backend/entities/DailyStepCount"
+          },
+          "description": "Stores daily step count data for each user.  The `userId` ensures that only the user can access their step count data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, matching the user profile ID."
+            },
+            {
+              "name": "stepCountId",
+              "description": "The unique identifier for the daily step count record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure secure and scalable data management for the EarnBull application. It prioritizes authorization independence and clear security rules. User profiles and associated data (BullCoin transactions, withdrawal requests, and daily step counts) are organized under the `/users/{userId}` path to enforce ownership. This design eliminates the need for complex `get()` calls in security rules and guarantees data integrity. Specifically, the denormalization strategy is applied to any collaborative data if the application is expanded in the future to support such a feature. By structuring the data this way, we ensure that access control is straightforward and efficient, supporting the required QAPs by securely scoping data to individual users. The segregation of user-specific data into separate subcollections ensures that list operations are secure, as rules can be applied at the collection level without needing to filter based on document content."
   }
 }

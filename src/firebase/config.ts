@@ -1,5 +1,3 @@
-// This file is automatically populated by the Firebase system.
-// Do not edit it manually.
 export const firebaseConfig = {
   "projectId": "studio-7062771887-1161b",
   "appId": "1:604389852678:web:40cc472b5131ef066ba587",
