@@ -22,6 +22,7 @@ import {
   increment,
   updateDoc,
   deleteDoc,
+  getDocs,
 } from 'firebase/firestore';
 
 // Constants
@@ -386,16 +387,24 @@ export function MainDashboard() {
   };
 
   const handleDeleteAllTransactions = async () => {
-    if (!user || !firestore || !transactions || transactions.length === 0) return;
+    if (!user || !firestore) return;
 
-    const batch = writeBatch(firestore);
-    transactions.forEach(tx => {
-        const transactionRef = doc(firestore, 'users', user.uid, 'transactions', tx.id);
-        batch.delete(transactionRef);
-    });
-
+    const transactionsCollectionRef = collection(firestore, 'users', user.uid, 'transactions');
+    
     try {
+        const querySnapshot = await getDocs(transactionsCollectionRef);
+        
+        if (querySnapshot.empty) {
+            return; // Nothing to delete
+        }
+
+        const batch = writeBatch(firestore);
+        querySnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
         await batch.commit();
+        
         toast({
             title: 'History Cleared',
             description: 'Your transaction history has been deleted.',
