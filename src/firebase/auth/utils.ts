@@ -26,8 +26,14 @@ export async function handleSignInWithGoogleRedirect(auth: Auth) {
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        const { displayName, email, photoURL } = user;
-        const userData = { displayName, email, photoURL };
+        const { uid, displayName, email } = user;
+        const userData = {
+          id: uid,
+          googleId: uid,
+          email: email || '',
+          displayName: displayName || 'New User',
+          creationDate: new Date().toISOString(),
+        };
         
         setDoc(userRef, userData, { merge: true })
           .catch(async (serverError) => {
