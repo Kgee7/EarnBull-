@@ -120,13 +120,20 @@ export function MainDashboard() {
     if (!user || !firestore) return;
 
     const oldSteps = steps;
-    if (newSteps <= oldSteps) return;
+    if (newSteps === oldSteps) return;
 
-    // Calculate rewards based on crossing 1000-step milestones
-    const previous1kMilestone = Math.floor(oldSteps / 1000);
-    const new1kMilestone = Math.floor(newSteps / 1000);
-    const bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
-    
+    let bcEarned = 0;
+    let new1kMilestone = 0;
+
+    // Only calculate rewards if steps are increasing
+    if (newSteps > oldSteps) {
+      const previous1kMilestone = Math.floor(oldSteps / 1000);
+      new1kMilestone = Math.floor(newSteps / 1000);
+      if (new1kMilestone > previous1kMilestone) {
+        bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
+      }
+    }
+
     const stepDoc = dailyStepData?.[0];
   
     try {
@@ -164,7 +171,12 @@ export function MainDashboard() {
   
       await batch.commit();
   
-      if (bcEarned > 0) {
+      if (newSteps === 0 && oldSteps > 0) {
+        toast({
+          title: 'Simulation Reset',
+          description: "Today's steps have been reset to 0.",
+        });
+      } else if (bcEarned > 0) {
         toast({
           title: 'Goal Reached!',
           description: `You earned ${bcEarned} BC!`,
@@ -403,5 +415,3 @@ export function MainDashboard() {
     </div>
   );
 }
-
-    

@@ -148,10 +148,11 @@ export function DailyGoalsCard({ currentSteps, onStepUpdate, goals, onGoalsUpdat
                         step={123}
                         onValueChange={(value) => onStepUpdate(value[0])}
                     />
+                    <div className="flex justify-end mt-4">
+                        <Button variant="outline" onClick={() => onStepUpdate(0)}>Reset Simulation</Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>
     )
 }
-
-    
