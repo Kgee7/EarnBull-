@@ -39,6 +39,29 @@
         "ghsBalance": {
           "type": "number",
           "description": "The user's current balance in GHS."
+        },
+        "dailyGoals": {
+          "type": "array",
+          "description": "User-defined daily walking goals.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "steps": {
+                "type": "number"
+              },
+              "reward": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "steps",
+              "reward"
+            ]
+          }
         }
       },
       "required": [
@@ -273,3 +296,5 @@
     "reasoning": "The Firestore structure is designed to ensure secure and scalable data management for the EarnBull application. It prioritizes authorization independence and clear security rules. User profiles and associated data (BullCoin transactions, withdrawal requests, and daily step counts) are organized under the `/users/{userId}` path to enforce ownership. This design eliminates the need for complex `get()` calls in security rules and guarantees data integrity. Specifically, the denormalization strategy is applied to any collaborative data if the application is expanded in the future to support such a feature. By structuring the data this way, we ensure that access control is straightforward and efficient, supporting the required QAPs by securely scoping data to individual users. The segregation of user-specific data into separate subcollections ensures that list operations are secure, as rules can be applied at the collection level without needing to filter based on document content."
   }
 }
+
+    

@@ -1,3 +1,9 @@
+export type Goal = {
+  name: string;
+  steps: number;
+  reward: number;
+};
+
 export type Transaction = {
   id: string;
   type: "earn" | "convert-to-usd" | "convert-to-ghs" | "withdraw";
@@ -17,6 +23,7 @@ export type UserProfile = {
   bullCoinBalance: number;
   usdBalance: number;
   ghsBalance: number;
+  dailyGoals?: Goal[];
 };
 
 export type DailyStepCount = {
@@ -25,3 +32,5 @@ export type DailyStepCount = {
   date: string;
   stepCount: number;
 };
+
+    

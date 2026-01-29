@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
-import type { Transaction, UserProfile, DailyStepCount } from '@/lib/types';
+import type { Transaction, UserProfile, DailyStepCount, Goal } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { DailyGoalsCard } from '@/components/dashboard/daily-goals-card';
@@ -20,6 +20,7 @@ import {
   limit,
   writeBatch,
   increment,
+  updateDoc,
 } from 'firebase/firestore';
 
 // Constants
@@ -77,6 +78,11 @@ export function MainDashboard() {
   const bullCoins = userProfile?.bullCoinBalance ?? 0;
   const usdBalance = userProfile?.usdBalance ?? 0;
   const ghsBalance = userProfile?.ghsBalance ?? 0;
+  const goals = userProfile?.dailyGoals ?? [
+    { name: "Bronze", steps: 2000, reward: 20 },
+    { name: "Silver", steps: 5000, reward: 50 },
+    { name: "Gold", steps: 10000, reward: 100 },
+  ];
 
   // Fetch exchange rate on mount
   useEffect(() => {
@@ -169,6 +175,25 @@ export function MainDashboard() {
       toast({
         title: "Error",
         description: "Could not save your progress. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGoalsUpdate = async (newGoals: Goal[]) => {
+    if (!user || !firestore || !userDocRef) return;
+
+    try {
+      await updateDoc(userDocRef, { dailyGoals: newGoals });
+      toast({
+        title: 'Goals Updated',
+        description: 'Your daily goals have been successfully saved.',
+      });
+    } catch (e) {
+      console.error("Error updating goals:", e);
+      toast({
+        title: "Update Failed",
+        description: "Could not save your new goals. Please try again.",
         variant: "destructive",
       });
     }
@@ -354,6 +379,8 @@ export function MainDashboard() {
           <DailyGoalsCard
             currentSteps={steps}
             onStepUpdate={handleStepUpdate}
+            goals={goals}
+            onGoalsUpdate={handleGoalsUpdate}
           />
           <WalletCard transactions={transactions ?? []} />
         </div>
@@ -376,3 +403,5 @@ export function MainDashboard() {
     </div>
   );
 }
+
+    

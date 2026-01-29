@@ -1,23 +1,23 @@
 "use client"
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
-import { Award } from "lucide-react";
+import { Award, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { Goal } from "@/lib/types";
 
-interface DailyGoalsCardProps {
+interface GoalProgressProps {
+    goal: Goal;
     currentSteps: number;
-    onStepUpdate: (newSteps: number) => void;
 }
 
-const goals = [
-    { steps: 2000, reward: 20, name: "Bronze" },
-    { steps: 5000, reward: 50, name: "Silver" },
-    { steps: 10000, reward: 100, name: "Gold" },
-];
-
-const GoalProgress = ({ goal, currentSteps }: { goal: typeof goals[0], currentSteps: number }) => {
-    const progress = Math.min((currentSteps / goal.steps) * 100, 100);
+const GoalProgress = ({ goal, currentSteps }: GoalProgressProps) => {
+    const progress = goal.steps > 0 ? Math.min((currentSteps / goal.steps) * 100, 100) : 100;
     const isCompleted = currentSteps >= goal.steps;
 
     return (
@@ -37,14 +37,92 @@ const GoalProgress = ({ goal, currentSteps }: { goal: typeof goals[0], currentSt
     )
 }
 
-export function DailyGoalsCard({ currentSteps, onStepUpdate }: DailyGoalsCardProps) {
+interface DailyGoalsCardProps {
+    currentSteps: number;
+    onStepUpdate: (newSteps: number) => void;
+    goals: Goal[];
+    onGoalsUpdate: (newGoals: Goal[]) => void;
+}
+
+
+export function DailyGoalsCard({ currentSteps, onStepUpdate, goals, onGoalsUpdate }: DailyGoalsCardProps) {
     const maxSteps = 12000;
+    const [editableGoals, setEditableGoals] = useState(goals);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    useEffect(() => {
+        setEditableGoals(goals);
+    }, [goals]);
+
+    const handleGoalChange = (index: number, newSteps: string) => {
+        const steps = parseInt(newSteps, 10);
+        const sanitizedSteps = isNaN(steps) || steps < 0 ? 0 : steps;
+
+        const newGoals = [...editableGoals];
+        newGoals[index].steps = sanitizedSteps;
+        newGoals[index].reward = Math.floor(sanitizedSteps / 100); // 1000 steps = 10 BC -> 100 steps = 1 BC
+        setEditableGoals(newGoals);
+    };
+
+    const handleSaveChanges = () => {
+        onGoalsUpdate(editableGoals);
+        setIsDialogOpen(false);
+    };
+
+    const handleCancel = () => {
+        setEditableGoals(goals); 
+        setIsDialogOpen(false);
+    }
     
     return (
         <Card className="sm:col-span-2 md:col-span-4 lg:col-span-2 xl:col-span-4">
-            <CardHeader>
-                <CardTitle className="font-headline">Today's Walking Goals</CardTitle>
-                <CardDescription>Reach your daily goals to earn Bull Coins. Keep moving!</CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                    <CardTitle className="font-headline">Today's Walking Goals</CardTitle>
+                    <CardDescription>Reach your daily goals to earn Bull Coins. Keep moving!</CardDescription>
+                </div>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <Settings className="mr-2 h-4 w-4" />
+                            Set Goals
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Set Your Daily Goals</DialogTitle>
+                            <DialogDescription>
+                                Customize your daily step targets. Rewards are automatically calculated (1 BC per 100 steps).
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            {editableGoals.map((goal, index) => (
+                                <div key={goal.name} className="grid grid-cols-5 items-center gap-4">
+                                    <Label htmlFor={`${goal.name}-steps`} className="text-right col-span-2">
+                                        {goal.name} Target
+                                    </Label>
+                                    <Input
+                                        id={`${goal.name}-steps`}
+                                        type="number"
+                                        value={goal.steps}
+                                        onChange={(e) => handleGoalChange(index, e.target.value)}
+                                        className="col-span-2"
+                                        min="0"
+                                    />
+                                    <div className="text-sm text-muted-foreground text-center">
+                                        {goal.reward} BC
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <DialogFooter>
+                           <DialogClose asChild>
+                                <Button type="button" variant="secondary" onClick={handleCancel}>Cancel</Button>
+                           </DialogClose>
+                            <Button type="submit" onClick={handleSaveChanges}>Save Changes</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
                 <div className="text-center">
@@ -75,3 +153,5 @@ export function DailyGoalsCard({ currentSteps, onStepUpdate }: DailyGoalsCardPro
         </Card>
     )
 }
+
+    

@@ -29,6 +29,11 @@ export async function signInWithGoogle(auth: Auth) {
         bullCoinBalance: 0,
         usdBalance: 0,
         ghsBalance: 0,
+        dailyGoals: [
+          { name: "Bronze", steps: 2000, reward: 20 },
+          { name: "Silver", steps: 5000, reward: 50 },
+          { name: "Gold", steps: 10000, reward: 100 },
+        ],
       };
       
       await setDoc(userRef, userData, { merge: true })
@@ -61,3 +66,5 @@ export async function signOut(auth: Auth) {
     console.error('Error signing out:', error);
   }
 }
+
+    
