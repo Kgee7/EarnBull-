@@ -35,7 +35,7 @@ export async function handleSignInWithGoogleRedirect(auth: Auth) {
           creationDate: new Date().toISOString(),
         };
         
-        setDoc(userRef, userData, { merge: true })
+        await setDoc(userRef, userData, { merge: true })
           .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
               path: userRef.path,
@@ -43,6 +43,8 @@ export async function handleSignInWithGoogleRedirect(auth: Auth) {
               requestResourceData: userData,
             });
             errorEmitter.emit('permission-error', permissionError);
+            // Re-throw so the outer catch can handle it if needed
+            throw permissionError;
           });
       }
     }
