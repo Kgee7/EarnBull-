@@ -46,7 +46,7 @@ interface DailyGoalsCardProps {
 
 
 export function DailyGoalsCard({ currentSteps, onStepUpdate, goals, onGoalsUpdate }: DailyGoalsCardProps) {
-    const maxSteps = 12000;
+    const maxSteps = 5000000;
     const [editableGoals, setEditableGoals] = useState(goals);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -145,7 +145,7 @@ export function DailyGoalsCard({ currentSteps, onStepUpdate, goals, onGoalsUpdat
                         value={[currentSteps]}
                         min={0}
                         max={maxSteps}
-                        step={123}
+                        step={1000}
                         onValueChange={(value) => onStepUpdate(value[0])}
                     />
                     <div className="flex justify-end mt-4">
