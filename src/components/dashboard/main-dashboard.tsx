@@ -5,7 +5,7 @@ import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
 import type { Transaction, UserProfile, DailyStepCount } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { StatCards } from '@/components/dashboard/stat-cards';
-import { StepSimulator } from '@/components/dashboard/step-simulator';
+import { DailyGoalsCard } from '@/components/dashboard/daily-goals-card';
 import { WalletCard } from '@/components/dashboard/wallet-card';
 import { ConversionCard } from '@/components/dashboard/conversion-card';
 import { WithdrawCard } from '@/components/dashboard/withdraw-card';
@@ -18,10 +18,8 @@ import {
   where,
   orderBy,
   limit,
-  updateDoc,
-  increment,
-  addDoc,
   writeBatch,
+  increment,
 } from 'firebase/firestore';
 
 // Constants
@@ -114,17 +112,21 @@ export function MainDashboard() {
   // Handlers
   const handleStepUpdate = async (newSteps: number) => {
     if (!user || !firestore) return;
-  
-    const stepDifference = newSteps - steps;
-    if (stepDifference <= 0) return;
-  
-    const bcEarned = Math.floor(stepDifference / 1000) * BC_PER_1000_STEPS;
+
+    const oldSteps = steps;
+    if (newSteps <= oldSteps) return;
+
+    // Calculate rewards based on crossing 1000-step milestones
+    const previous1kMilestone = Math.floor(oldSteps / 1000);
+    const new1kMilestone = Math.floor(newSteps / 1000);
+    const bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
+    
     const stepDoc = dailyStepData?.[0];
   
     try {
       const batch = writeBatch(firestore);
   
-      // Update step count
+      // Update step count (or create new daily doc)
       if (stepDoc) {
         const stepDocRef = doc(firestore, 'users', user.uid, 'dailyStepCounts', stepDoc.id);
         batch.update(stepDocRef, { stepCount: newSteps });
@@ -137,21 +139,18 @@ export function MainDashboard() {
         });
       }
   
+      // If coins were earned, update balance and add transaction
       if (bcEarned > 0) {
-        const stepsUsed = Math.floor(stepDifference / 1000) * 1000;
-  
-        // Update user's Bull Coin balance
         const userRef = doc(firestore, 'users', user.uid);
         batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
   
-        // Add transaction record
         const newTransaction: Omit<Transaction, 'id'> = {
           userId: user.uid,
           type: 'earn',
           amount: bcEarned,
           currency: 'BC',
           date: new Date().toISOString(),
-          description: `Walked ${stepsUsed} steps`,
+          description: `Reward for reaching ${new1kMilestone * 1000} steps`,
         };
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
         batch.set(transactionRef, newTransaction);
@@ -161,7 +160,7 @@ export function MainDashboard() {
   
       if (bcEarned > 0) {
         toast({
-          title: 'Rewards!',
+          title: 'Goal Reached!',
           description: `You earned ${bcEarned} BC!`,
         });
       }
@@ -352,13 +351,11 @@ export function MainDashboard() {
       </div>
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-            <StepSimulator
-              currentSteps={steps}
-              onStepUpdate={handleStepUpdate}
-            />
-          </div>
-          <WalletCard transactions={transactions} />
+          <DailyGoalsCard
+            currentSteps={steps}
+            onStepUpdate={handleStepUpdate}
+          />
+          <WalletCard transactions={transactions ?? []} />
         </div>
         <div className="grid auto-rows-max items-start gap-4 md:gap-8">
           <ConversionCard

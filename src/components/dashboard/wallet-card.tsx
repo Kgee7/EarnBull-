@@ -42,20 +42,28 @@ export function WalletCard({ transactions }: WalletCardProps) {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {transactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                        <TableCell>
-                            <div className="font-medium">{tx.description}</div>
-                        </TableCell>
-                        <TableCell className={`text-right font-medium ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(tx.amount, tx.currency)}
-                        </TableCell>
-                         <TableCell className="hidden sm:table-cell">{new Date(tx.date).toLocaleDateString()}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                            <Badge variant={tx.type === 'earn' ? 'default' : 'secondary'} className={tx.type === 'earn' ? 'bg-primary/20 text-primary' : ''}>{tx.type}</Badge>
+                {transactions && transactions.length > 0 ? (
+                    transactions.map((tx) => (
+                        <TableRow key={tx.id}>
+                            <TableCell>
+                                <div className="font-medium">{tx.description}</div>
+                            </TableCell>
+                            <TableCell className={`text-right font-medium ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {tx.amount >= 0 ? '+' : ''}{formatCurrency(tx.amount, tx.currency)}
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">{new Date(tx.date).toLocaleDateString()}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                                <Badge variant={tx.type === 'earn' ? 'default' : 'secondary'} className={tx.type === 'earn' ? 'bg-primary/20 text-primary' : ''}>{tx.type}</Badge>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
+                            No transactions yet. Start walking to earn!
                         </TableCell>
                     </TableRow>
-                ))}
+                )}
             </TableBody>
             </Table>
         </ScrollArea>
