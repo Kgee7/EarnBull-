@@ -22,6 +22,7 @@ import {
 interface WalletCardProps {
   transactions: Transaction[];
   onDeleteTransaction: (transactionId: string) => void;
+  onDeleteAllTransactions: () => void;
 }
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -37,12 +38,35 @@ const formatCurrency = (amount: number, currency: string) => {
     }
 }
 
-export function WalletCard({ transactions, onDeleteTransaction }: WalletCardProps) {
+export function WalletCard({ transactions, onDeleteTransaction, onDeleteAllTransactions }: WalletCardProps) {
   return (
     <Card className="lg:col-span-2">
-      <CardHeader>
-        <CardTitle className="font-headline">Transaction History</CardTitle>
-        <CardDescription>A record of your earnings and withdrawals. You can delete individual records.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle className="font-headline">Transaction History</CardTitle>
+          <CardDescription>A record of your earnings and withdrawals. You can delete individual records or clear your entire history.</CardDescription>
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" disabled={transactions.length === 0}>
+                Clear History
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your entire transaction history.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onDeleteAllTransactions}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-96">

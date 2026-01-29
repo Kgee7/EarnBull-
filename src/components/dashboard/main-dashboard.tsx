@@ -385,6 +385,31 @@ export function MainDashboard() {
     }
   };
 
+  const handleDeleteAllTransactions = async () => {
+    if (!user || !firestore || !transactions || transactions.length === 0) return;
+
+    const batch = writeBatch(firestore);
+    transactions.forEach(tx => {
+        const transactionRef = doc(firestore, 'users', user.uid, 'transactions', tx.id);
+        batch.delete(transactionRef);
+    });
+
+    try {
+        await batch.commit();
+        toast({
+            title: 'History Cleared',
+            description: 'Your transaction history has been deleted.',
+        });
+    } catch (e) {
+        console.error("Error clearing transaction history:", e);
+        toast({
+            title: "Deletion Failed",
+            description: "Could not clear your transaction history. Please try again.",
+            variant: "destructive",
+        });
+    }
+  };
+
   const isLoading = isRateLoading || userLoading || profileLoading || stepsLoading || transactionsLoading;
 
   if (isLoading) {
@@ -416,7 +441,11 @@ export function MainDashboard() {
             goals={goals}
             onGoalsUpdate={handleGoalsUpdate}
           />
-          <WalletCard transactions={transactions ?? []} onDeleteTransaction={handleDeleteTransaction} />
+          <WalletCard 
+            transactions={transactions ?? []} 
+            onDeleteTransaction={handleDeleteTransaction}
+            onDeleteAllTransactions={handleDeleteAllTransactions} 
+          />
         </div>
         <div className="grid auto-rows-max items-start gap-4 md:gap-8">
           <ConversionCard
