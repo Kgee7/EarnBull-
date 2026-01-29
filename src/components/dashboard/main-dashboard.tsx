@@ -21,6 +21,7 @@ import {
   writeBatch,
   increment,
   updateDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 
 // Constants
@@ -363,6 +364,27 @@ export function MainDashboard() {
     }
   };
 
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!user || !firestore) return;
+
+    const transactionRef = doc(firestore, 'users', user.uid, 'transactions', transactionId);
+
+    try {
+      await deleteDoc(transactionRef);
+      toast({
+        title: 'Transaction Deleted',
+        description: 'The transaction has been removed from your history.',
+      });
+    } catch (e) {
+      console.error("Error deleting transaction:", e);
+      toast({
+        title: "Deletion Failed",
+        description: "Could not delete the transaction. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const isLoading = isRateLoading || userLoading || profileLoading || stepsLoading || transactionsLoading;
 
   if (isLoading) {
@@ -394,7 +416,7 @@ export function MainDashboard() {
             goals={goals}
             onGoalsUpdate={handleGoalsUpdate}
           />
-          <WalletCard transactions={transactions ?? []} />
+          <WalletCard transactions={transactions ?? []} onDeleteTransaction={handleDeleteTransaction} />
         </div>
         <div className="grid auto-rows-max items-start gap-4 md:gap-8">
           <ConversionCard

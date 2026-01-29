@@ -5,9 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface WalletCardProps {
   transactions: Transaction[];
+  onDeleteTransaction: (transactionId: string) => void;
 }
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -23,12 +37,12 @@ const formatCurrency = (amount: number, currency: string) => {
     }
 }
 
-export function WalletCard({ transactions }: WalletCardProps) {
+export function WalletCard({ transactions, onDeleteTransaction }: WalletCardProps) {
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
         <CardTitle className="font-headline">Transaction History</CardTitle>
-        <CardDescription>A record of your earnings and withdrawals.</CardDescription>
+        <CardDescription>A record of your earnings and withdrawals. You can delete individual records.</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-96">
@@ -39,6 +53,7 @@ export function WalletCard({ transactions }: WalletCardProps) {
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="hidden sm:table-cell">Date</TableHead>
                 <TableHead className="hidden md:table-cell">Type</TableHead>
+                <TableHead className="text-right">Action</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -55,11 +70,35 @@ export function WalletCard({ transactions }: WalletCardProps) {
                             <TableCell className="hidden md:table-cell">
                                 <Badge variant={tx.type === 'earn' ? 'default' : 'secondary'} className={tx.type === 'earn' ? 'bg-primary/20 text-primary' : ''}>{tx.type}</Badge>
                             </TableCell>
+                            <TableCell className="text-right">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                      <span className="sr-only">Delete transaction</span>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete this transaction record.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onDeleteTransaction(tx.id)}>
+                                        Continue
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
                             No transactions yet. Start walking to earn!
                         </TableCell>
                     </TableRow>
