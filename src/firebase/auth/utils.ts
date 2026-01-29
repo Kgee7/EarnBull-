@@ -42,10 +42,15 @@ export async function signInWithGoogle(auth: Auth) {
           throw permissionError;
         });
     }
-  } catch (error) {
-    console.error('Error during Google sign-in:', error);
-    // Let the caller handle UI feedback if needed
-    throw error;
+  } catch (error: any) {
+    if (error.code === 'auth/popup-closed-by-user') {
+      // This is not an application error. The user simply closed the login popup.
+      console.log("Sign-in popup closed by user.");
+    } else {
+      // For any other unexpected error, log it and let the framework handle it.
+      console.error('Error during Google sign-in:', error);
+      throw error;
+    }
   }
 }
 
