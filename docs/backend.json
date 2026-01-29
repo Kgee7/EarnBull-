@@ -27,6 +27,18 @@
           "type": "string",
           "description": "Date and time the user profile was created.",
           "format": "date-time"
+        },
+        "bullCoinBalance": {
+          "type": "number",
+          "description": "The user's current balance of Bull Coins."
+        },
+        "usdBalance": {
+          "type": "number",
+          "description": "The user's current balance in USD."
+        },
+        "ghsBalance": {
+          "type": "number",
+          "description": "The user's current balance in GHS."
         }
       },
       "required": [
@@ -37,32 +49,43 @@
         "creationDate"
       ]
     },
-    "BullCoinTransaction": {
+    "Transaction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BullCoinTransaction",
+      "title": "Transaction",
       "type": "object",
-      "description": "Represents a Bull Coin transaction, either earning or spending.",
+      "description": "Represents a transaction, either earning or spending.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Bull Coin transaction."
+          "description": "Unique identifier for the transaction."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N BullCoinTransaction)"
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Transaction)"
         },
-        "transactionDate": {
+        "date": {
           "type": "string",
           "description": "Date and time of the transaction.",
           "format": "date-time"
         },
         "amount": {
           "type": "number",
-          "description": "Amount of Bull Coins involved in the transaction (positive for earning, negative for spending)."
+          "description": "Amount involved in the transaction (positive for earning, negative for spending)."
         },
-        "transactionType": {
+        "currency": {
           "type": "string",
-          "description": "Type of transaction (e.g., 'steps', 'conversion', 'withdrawal')."
+          "description": "The currency of the transaction amount.",
+          "enum": ["BC", "USD", "GHS"]
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of transaction.",
+          "enum": [
+            "earn",
+            "convert-to-usd",
+            "convert-to-ghs",
+            "withdraw"
+          ]
         },
         "description": {
           "type": "string",
@@ -72,9 +95,10 @@
       "required": [
         "id",
         "userId",
-        "transactionDate",
+        "date",
         "amount",
-        "transactionType",
+        "currency",
+        "type",
         "description"
       ]
     },
@@ -186,11 +210,11 @@
         }
       },
       {
-        "path": "/users/{userId}/bullCoinTransactions/{transactionId}",
+        "path": "/users/{userId}/transactions/{transactionId}",
         "definition": {
-          "entityName": "BullCoinTransaction",
+          "entityName": "Transaction",
           "schema": {
-            "$ref": "#/backend/entities/BullCoinTransaction"
+            "$ref": "#/backend/entities/Transaction"
           },
           "description": "Stores Bull Coin transactions for each user.  The `userId` corresponds to the user's unique ID, ensuring only the user can access their transaction history.",
           "params": [

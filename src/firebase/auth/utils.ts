@@ -5,7 +5,7 @@ import {
   type Auth,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
-import { doc, setDoc, getFirestore, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getFirestore, getDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -26,6 +26,9 @@ export async function signInWithGoogle(auth: Auth) {
         email: email || '',
         displayName: displayName || 'New User',
         creationDate: new Date().toISOString(),
+        bullCoinBalance: 0,
+        usdBalance: 0,
+        ghsBalance: 0,
       };
       
       await setDoc(userRef, userData, { merge: true })
@@ -41,6 +44,8 @@ export async function signInWithGoogle(auth: Auth) {
     }
   } catch (error) {
     console.error('Error during Google sign-in:', error);
+    // Let the caller handle UI feedback if needed
+    throw error;
   }
 }
 

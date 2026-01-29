@@ -27,7 +27,7 @@ export function StepSimulator({ currentSteps, onStepUpdate }: StepSimulatorProps
                     value={[currentSteps]}
                     min={0}
                     max={maxSteps}
-                    step={1}
+                    step={123} // Update more smoothly
                     onValueChange={(value) => onStepUpdate(value[0])}
                 />
             </CardContent>

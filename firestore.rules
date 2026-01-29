@@ -6,7 +6,7 @@
  *
  * Data Structure: The entire data model is hierarchical, rooted at the top-level `/users` collection.
  * Each user's data is stored under `/users/{userId}`, where `{userId}` is the user's unique
- * authentication ID. All related data, such as `bullCoinTransactions`, `withdrawalRequests`, and
+ * authentication ID. All related data, such as `transactions`, `withdrawalRequests`, and
  * `dailyStepCounts`, are stored in subcollections under this path.
  *
  * Key Security Decisions:
@@ -20,7 +20,7 @@
  *
  * Denormalization for Authorization: This ruleset relies on the path structure (`/users/{userId}`)
  * for authorization, which is a highly performant pattern. Additionally, it mandates that all documents
- * created within a user's subcollection (e.g., a BullCoinTransaction) must contain a `userId` field
+ * created within a user's subcollection (e.g., a Transaction) must contain a `userId` field
  * matching the path. This ensures relational integrity without costly `get()` calls and makes
  * ownership explicit within the data itself.
  *
@@ -121,12 +121,12 @@ service cloud.firestore {
 
       /**
        * @description A user can manage their own BullCoin transactions.
-       * @path /users/{userId}/bullCoinTransactions/{transactionId}
-       * @allow (create) User 'user_abc' creates a new transaction document in their own `bullCoinTransactions` subcollection.
-       * @deny (get) User 'user_xyz' tries to read a transaction from `/users/user_abc/bullCoinTransactions/...`.
+       * @path /users/{userId}/transactions/{transactionId}
+       * @allow (create) User 'user_abc' creates a new transaction document in their own `transactions` subcollection.
+       * @deny (get) User 'user_xyz' tries to read a transaction from `/users/user_abc/transactions/...`.
        * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
        */
-      match /bullCoinTransactions/{transactionId} {
+      match /transactions/{transactionId} {
         allow get, list: if isOwner(userId);
         allow create: if isCreatingValidSubcollectionDoc(userId);
         allow update: if isUpdatingValidSubcollectionDoc(userId);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, UserProfile, DailyStepCount } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { StepSimulator } from '@/components/dashboard/step-simulator';
@@ -10,7 +10,19 @@ import { WalletCard } from '@/components/dashboard/wallet-card';
 import { ConversionCard } from '@/components/dashboard/conversion-card';
 import { WithdrawCard } from '@/components/dashboard/withdraw-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import {
+  doc,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  updateDoc,
+  increment,
+  addDoc,
+  writeBatch,
+} from 'firebase/firestore';
 
 // Constants
 const BC_PER_1000_STEPS = 10;
@@ -20,40 +32,53 @@ const MIN_WITHDRAWAL_USD = 1;
 export function MainDashboard() {
   const { toast } = useToast();
   const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
 
   // State
-  const [steps, setSteps] = useState(5678);
-  const [bullCoins, setBullCoins] = useState(120.5);
-  const [usdBalance, setUsdBalance] = useState(5.75);
-  const [ghsBalance, setGhsBalance] = useState(0);
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      type: 'earn',
-      amount: 50,
-      currency: 'BC',
-      date: new Date(Date.now() - 86400000).toISOString(),
-      description: 'Walked 5000 steps',
-    },
-    {
-      id: '2',
-      type: 'convert-to-usd',
-      amount: -100,
-      currency: 'BC',
-      date: new Date(Date.now() - 172800000).toISOString(),
-      description: 'Converted to $1.50 USD',
-    },
-    {
-      id: '3',
-      type: 'earn',
-      amount: 70.5,
-      currency: 'BC',
-      date: new Date(Date.now() - 259200000).toISOString(),
-      description: 'Walked 7050 steps',
-    },
-  ]);
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const [isRateLoading, setIsRateLoading] = useState(true);
+
+  // Firestore data hooks
+  const userDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
+  const { data: userProfile, isLoading: profileLoading } =
+    useDoc<UserProfile>(userDocRef);
+
+  const today = new Date().toISOString().split('T')[0];
+  const stepsQuery = useMemoFirebase(
+    () =>
+      user
+        ? query(
+            collection(firestore, 'users', user.uid, 'dailyStepCounts'),
+            where('date', '==', today),
+            limit(1)
+          )
+        : null,
+    [user, firestore, today]
+  );
+  const { data: dailyStepData, isLoading: stepsLoading } =
+    useCollection<DailyStepCount>(stepsQuery);
+  
+  const transactionsQuery = useMemoFirebase(
+    () =>
+      user
+        ? query(
+            collection(firestore, 'users', user.uid, 'transactions'),
+            orderBy('date', 'desc'),
+            limit(50)
+          )
+        : null,
+    [user, firestore]
+  );
+  const { data: transactions, isLoading: transactionsLoading } =
+    useCollection<Transaction>(transactionsQuery);
+
+  const steps = dailyStepData?.[0]?.stepCount ?? 0;
+  const bullCoins = userProfile?.bullCoinBalance ?? 0;
+  const usdBalance = userProfile?.usdBalance ?? 0;
+  const ghsBalance = userProfile?.ghsBalance ?? 0;
 
   // Fetch exchange rate on mount
   useEffect(() => {
@@ -87,38 +112,71 @@ export function MainDashboard() {
   }, [toast]);
 
   // Handlers
-  const handleStepUpdate = (newSteps: number) => {
+  const handleStepUpdate = async (newSteps: number) => {
+    if (!user || !firestore) return;
+  
     const stepDifference = newSteps - steps;
     if (stepDifference <= 0) return;
-
+  
     const bcEarned = Math.floor(stepDifference / 1000) * BC_PER_1000_STEPS;
-    if (bcEarned > 0) {
-      const remainingSteps = stepDifference % 1000;
-      setSteps(steps + stepDifference - remainingSteps);
-      setBullCoins((prev) => prev + bcEarned);
-
-      const newTransaction: Transaction = {
-        id: crypto.randomUUID(),
-        type: 'earn',
-        amount: bcEarned,
-        currency: 'BC',
-        date: new Date().toISOString(),
-        description: `Walked ${
-          Math.floor(stepDifference / 1000) * 1000
-        } steps`,
-      };
-      setTransactions((prev) => [newTransaction, ...prev]);
-
+    const stepDoc = dailyStepData?.[0];
+  
+    try {
+      const batch = writeBatch(firestore);
+  
+      // Update step count
+      if (stepDoc) {
+        const stepDocRef = doc(firestore, 'users', user.uid, 'dailyStepCounts', stepDoc.id);
+        batch.update(stepDocRef, { stepCount: newSteps });
+      } else {
+        const stepDocRef = doc(collection(firestore, 'users', user.uid, 'dailyStepCounts'));
+        batch.set(stepDocRef, {
+          userId: user.uid,
+          date: today,
+          stepCount: newSteps,
+        });
+      }
+  
+      if (bcEarned > 0) {
+        const stepsUsed = Math.floor(stepDifference / 1000) * 1000;
+  
+        // Update user's Bull Coin balance
+        const userRef = doc(firestore, 'users', user.uid);
+        batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
+  
+        // Add transaction record
+        const newTransaction: Omit<Transaction, 'id'> = {
+          userId: user.uid,
+          type: 'earn',
+          amount: bcEarned,
+          currency: 'BC',
+          date: new Date().toISOString(),
+          description: `Walked ${stepsUsed} steps`,
+        };
+        const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+        batch.set(transactionRef, newTransaction);
+      }
+  
+      await batch.commit();
+  
+      if (bcEarned > 0) {
+        toast({
+          title: 'Rewards!',
+          description: `You earned ${bcEarned} BC!`,
+        });
+      }
+    } catch (e) {
+      console.error("Error updating steps:", e);
       toast({
-        title: 'Rewards!',
-        description: `You earned ${bcEarned} BC!`,
+        title: "Error",
+        description: "Could not save your progress. Please try again.",
+        variant: "destructive",
       });
-    } else {
-      setSteps(newSteps);
     }
   };
 
-  const handleConvertToUsd = (bcAmount: number) => {
+  const handleConvertToUsd = async (bcAmount: number) => {
+    if (!user || !firestore || !userProfile) return;
     if (bcAmount <= 0 || bcAmount > bullCoins) {
       toast({
         title: 'Invalid Amount',
@@ -127,101 +185,151 @@ export function MainDashboard() {
       });
       return;
     }
-    const usdEarned = (bcAmount / 10) * USD_PER_10_BC;
-    setBullCoins((prev) => prev - bcAmount);
-    setUsdBalance((prev) => prev + usdEarned);
 
-    const newTransaction: Transaction = {
-      id: crypto.randomUUID(),
-      type: 'convert-to-usd',
-      amount: -bcAmount,
-      currency: 'BC',
-      date: new Date().toISOString(),
-      description: `Converted to $${usdEarned.toFixed(2)} USD`,
-    };
-    setTransactions((prev) => [newTransaction, ...prev]);
-    toast({
-      title: 'Success',
-      description: `Converted ${bcAmount} BC to $${usdEarned.toFixed(
-        2
-      )} USD.`,
-    });
+    const usdEarned = (bcAmount / 10) * USD_PER_10_BC;
+    const userRef = doc(firestore, 'users', user.uid);
+
+    try {
+      const batch = writeBatch(firestore);
+      batch.update(userRef, {
+        bullCoinBalance: increment(-bcAmount),
+        usdBalance: increment(usdEarned),
+      });
+
+      const newTransaction: Omit<Transaction, 'id'> = {
+        userId: user.uid,
+        type: 'convert-to-usd',
+        amount: -bcAmount,
+        currency: 'BC',
+        date: new Date().toISOString(),
+        description: `Converted to $${usdEarned.toFixed(2)} USD`,
+      };
+      const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+      batch.set(transactionRef, newTransaction);
+
+      await batch.commit();
+
+      toast({
+        title: 'Success',
+        description: `Converted ${bcAmount} BC to $${usdEarned.toFixed(2)} USD.`,
+      });
+    } catch(e) {
+      console.error("Error converting to USD:", e);
+      toast({
+        title: "Conversion Failed",
+        description: "Could not complete the conversion. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleConvertToGhs = (usdAmount: number) => {
-    if (!exchangeRate) {
-      toast({
-        title: 'Error',
-        description: 'Exchange rate not available.',
-        variant: 'destructive',
-      });
+  const handleConvertToGhs = async (usdAmount: number) => {
+    if (!exchangeRate || !user || !firestore || !userProfile) {
+      toast({ title: 'Error', description: 'Cannot perform conversion right now.', variant: 'destructive'});
       return;
     }
     if (usdAmount <= 0 || usdAmount > usdBalance) {
-      toast({
-        title: 'Invalid Amount',
-        description: 'Please enter a valid amount of USD to convert.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid amount of USD to convert.', variant: 'destructive' });
       return;
     }
     const ghsAmount = usdAmount * exchangeRate;
-    setUsdBalance((prev) => prev - usdAmount);
-    setGhsBalance((prev) => prev + ghsAmount);
+    const userRef = doc(firestore, 'users', user.uid);
+    
+    try {
+      const batch = writeBatch(firestore);
 
-    const newTransaction: Transaction = {
-      id: crypto.randomUUID(),
-      type: 'convert-to-ghs',
-      amount: -usdAmount,
-      currency: 'USD',
-      date: new Date().toISOString(),
-      description: `Converted to GHS ${ghsAmount.toFixed(2)}`,
-    };
-    setTransactions((prev) => [newTransaction, ...prev]);
-    toast({
-      title: 'Success',
-      description: `Converted $${usdAmount.toFixed(
-        2
-      )} to GHS ${ghsAmount.toFixed(2)}.`,
-    });
+      batch.update(userRef, {
+        usdBalance: increment(-usdAmount),
+        ghsBalance: increment(ghsAmount),
+      });
+
+      const newTransaction: Omit<Transaction, 'id'> = {
+        userId: user.uid,
+        type: 'convert-to-ghs',
+        amount: -usdAmount,
+        currency: 'USD',
+        date: new Date().toISOString(),
+        description: `Converted to GHS ${ghsAmount.toFixed(2)}`,
+      };
+      const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+      batch.set(transactionRef, newTransaction);
+
+      await batch.commit();
+
+      toast({
+        title: 'Success',
+        description: `Converted $${usdAmount.toFixed(2)} to GHS ${ghsAmount.toFixed(2)}.`,
+      });
+    } catch(e) {
+      console.error("Error converting to GHS:", e);
+      toast({
+        title: "Conversion Failed",
+        description: "Could not complete the conversion. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleWithdraw = (ghsAmount: number, momoNumber: string) => {
+  const handleWithdraw = async (ghsAmount: number, momoNumber: string) => {
+    if (!user || !firestore) return;
     if (ghsAmount <= 0 || ghsAmount > ghsBalance) {
-      toast({
-        title: 'Invalid Amount',
-        description: 'Please enter a valid amount to withdraw.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Invalid Amount', description: 'Please enter a valid amount to withdraw.', variant: 'destructive' });
       return;
     }
     if (!/^\d{10}$/.test(momoNumber)) {
-      toast({
-        title: 'Invalid Number',
-        description: 'Please enter a valid 10-digit MTN MoMo number.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Invalid Number', description: 'Please enter a valid 10-digit MTN MoMo number.', variant: 'destructive' });
       return;
     }
 
-    setGhsBalance((prev) => prev - ghsAmount);
-    const newTransaction: Transaction = {
-      id: crypto.randomUUID(),
-      type: 'withdraw',
-      amount: -ghsAmount,
-      currency: 'GHS',
-      date: new Date().toISOString(),
-      description: `Withdrawal to ${momoNumber}`,
-    };
-    setTransactions((prev) => [newTransaction, ...prev]);
+    const userRef = doc(firestore, 'users', user.uid);
 
-    toast({
-      title: 'Withdrawal Initiated',
-      description: `GHS ${ghsAmount.toFixed(2)} is being sent to ${momoNumber}.`,
-    });
+    try {
+      const batch = writeBatch(firestore);
+
+      batch.update(userRef, { ghsBalance: increment(-ghsAmount) });
+
+      const newTransaction: Omit<Transaction, 'id'> = {
+        userId: user.uid,
+        type: 'withdraw',
+        amount: -ghsAmount,
+        currency: 'GHS',
+        date: new Date().toISOString(),
+        description: `Withdrawal to ${momoNumber}`,
+      };
+      const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+      batch.set(transactionRef, newTransaction);
+      
+      // Also create a withdrawal request document
+      const withdrawalRequestRef = doc(collection(firestore, 'users', user.uid, 'withdrawalRequests'));
+      batch.set(withdrawalRequestRef, {
+        userId: user.uid,
+        requestDate: new Date().toISOString(),
+        amountGHS: ghsAmount,
+        amountUSD: ghsAmount / (exchangeRate ?? 1),
+        exchangeRate: exchangeRate,
+        momoNumber: momoNumber,
+        status: 'pending',
+      });
+
+      await batch.commit();
+
+      toast({
+        title: 'Withdrawal Initiated',
+        description: `GHS ${ghsAmount.toFixed(2)} is being sent to ${momoNumber}.`,
+      });
+    } catch (e) {
+      console.error("Error withdrawing funds:", e);
+      toast({
+        title: "Withdrawal Failed",
+        description: "Could not initiate withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  if (isRateLoading || userLoading) {
+  const isLoading = isRateLoading || userLoading || profileLoading || stepsLoading || transactionsLoading;
+
+  if (isLoading) {
     return (
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         {[...Array(6)].map((_, i) => (
