@@ -135,7 +135,7 @@ export function DailyGoalsCard({ currentSteps, onStepUpdate, goals, onGoalsUpdat
                 </div>
 
                 <div className="pt-6 mt-2 border-t">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Demo: Simulate Activity</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Simulate Activity</p>
                     <p className="text-xs text-muted-foreground mb-4">
                         As this is a web prototype, we can't access your phone's live motion sensors. 
                         Use this slider to simulate walking and see how rewards are granted as you reach your goals.
