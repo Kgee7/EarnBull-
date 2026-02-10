@@ -5,15 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 interface WithdrawCardProps {
     ghsBalance: number;
     usdBalance: number;
     minWithdrawalUsd: number;
     onWithdraw: (ghsAmount: number, momoNumber: string) => void;
+    isWithdrawing: boolean;
 }
 
-export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw }: WithdrawCardProps) {
+export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing }: WithdrawCardProps) {
     const [withdrawAmount, setWithdrawAmount] = useState("");
     const [momoNumber, setMomoNumber] = useState("");
     
@@ -45,7 +47,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         placeholder="0.00" 
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
-                        disabled={!canWithdraw}
+                        disabled={!canWithdraw || isWithdrawing}
                     />
                     <p className="text-xs text-muted-foreground">Available for withdrawal: GHS {ghsBalance.toFixed(2)}</p>
                 </div>
@@ -57,7 +59,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         placeholder="024XXXXXXX"
                         value={momoNumber}
                         onChange={e => setMomoNumber(e.target.value)}
-                        disabled={!canWithdraw}
+                        disabled={!canWithdraw || isWithdrawing}
                     />
                 </div>
             </CardContent>
@@ -65,9 +67,10 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                  <Button 
                     className="w-full"
                     onClick={handleWithdraw}
-                    disabled={!canWithdraw || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > ghsBalance || !momoNumber}
+                    disabled={!canWithdraw || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > ghsBalance || !momoNumber || isWithdrawing}
                 >
-                    Withdraw GHS {parseFloat(withdrawAmount) > 0 ? parseFloat(withdrawAmount).toFixed(2) : ''}
+                    {isWithdrawing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isWithdrawing ? 'Processing...' : `Withdraw GHS ${parseFloat(withdrawAmount) > 0 ? parseFloat(withdrawAmount).toFixed(2) : ''}`}
                 </Button>
             </CardFooter>
         </Card>

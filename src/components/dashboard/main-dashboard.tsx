@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
+import { processMomoWithdrawal } from '@/ai/flows/momo-withdrawal';
 import type { Transaction, UserProfile, DailyStepCount, Goal } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { StatCards } from '@/components/dashboard/stat-cards';
@@ -38,6 +39,7 @@ export function MainDashboard() {
   // State
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const [isRateLoading, setIsRateLoading] = useState(true);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   // Firestore data hooks
   const userDocRef = useMemoFirebase(
@@ -309,7 +311,7 @@ export function MainDashboard() {
   };
 
   const handleWithdraw = async (ghsAmount: number, momoNumber: string) => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || !exchangeRate) return;
     if (ghsAmount <= 0 || ghsAmount > ghsBalance) {
       toast({ title: 'Invalid Amount', description: 'Please enter a valid amount to withdraw.', variant: 'destructive' });
       return;
@@ -319,9 +321,22 @@ export function MainDashboard() {
       return;
     }
 
-    const userRef = doc(firestore, 'users', user.uid);
+    setIsWithdrawing(true);
 
     try {
+      const clientTransactionId = `wd-${user.uid}-${Date.now()}`;
+      
+      const result = await processMomoWithdrawal({
+        amount: ghsAmount,
+        momoNumber: momoNumber,
+        transactionId: clientTransactionId,
+      });
+
+      if (!result.success) {
+        throw new Error(result.message || 'Withdrawal was declined by the payment provider.');
+      }
+
+      const userRef = doc(firestore, 'users', user.uid);
       const batch = writeBatch(firestore);
 
       batch.update(userRef, { ghsBalance: increment(-ghsAmount) });
@@ -337,31 +352,33 @@ export function MainDashboard() {
       const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
       batch.set(transactionRef, newTransaction);
       
-      // Also create a withdrawal request document
       const withdrawalRequestRef = doc(collection(firestore, 'users', user.uid, 'withdrawalRequests'));
       batch.set(withdrawalRequestRef, {
         userId: user.uid,
         requestDate: new Date().toISOString(),
         amountGHS: ghsAmount,
-        amountUSD: ghsAmount / (exchangeRate ?? 1),
+        amountUSD: ghsAmount / exchangeRate,
         exchangeRate: exchangeRate,
         momoNumber: momoNumber,
-        status: 'pending',
+        status: 'completed',
+        providerTransactionId: result.providerTransactionId,
       });
 
       await batch.commit();
 
       toast({
-        title: 'Withdrawal Initiated',
-        description: `GHS ${ghsAmount.toFixed(2)} is being sent to ${momoNumber}.`,
+        title: 'Withdrawal Successful',
+        description: `GHS ${ghsAmount.toFixed(2)} has been sent to ${momoNumber}.`,
       });
-    } catch (e) {
-      console.error("Error withdrawing funds:", e);
+    } catch (e: any) {
+      console.error("Error during withdrawal process:", e);
       toast({
         title: "Withdrawal Failed",
-        description: "Could not initiate withdrawal. Please try again.",
+        description: e.message || "An unexpected error occurred during withdrawal. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsWithdrawing(false);
     }
   };
 
@@ -395,7 +412,11 @@ export function MainDashboard() {
         const querySnapshot = await getDocs(transactionsCollectionRef);
         
         if (querySnapshot.empty) {
-            return; // Nothing to delete
+            toast({
+                title: 'History Already Clear',
+                description: 'There are no transactions to delete.',
+            });
+            return;
         }
 
         const batch = writeBatch(firestore);
@@ -469,6 +490,7 @@ export function MainDashboard() {
             usdBalance={usdBalance}
             minWithdrawalUsd={MIN_WITHDRAWAL_USD}
             onWithdraw={handleWithdraw}
+            isWithdrawing={isWithdrawing}
           />
         </div>
       </div>
