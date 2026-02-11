@@ -33,7 +33,7 @@ const MIN_WITHDRAWAL_USD = 1;
 
 export function MainDashboard() {
   const { toast } = useToast();
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading: userLoading } = useUser();
   const firestore = useFirestore();
 
   // State
@@ -440,7 +440,7 @@ export function MainDashboard() {
     }
   };
 
-  const isLoading = isRateLoading || userLoading || profileLoading || stepsLoading || transactionsLoading;
+  const isLoading = userLoading || profileLoading || stepsLoading || transactionsLoading;
 
   if (isLoading) {
     return (

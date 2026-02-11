@@ -41,14 +41,14 @@ function LoginSkeleton() {
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, loading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!isUserLoading && user) {
       router.push('/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, isUserLoading, router]);
 
   const handleSignIn = async () => {
     if (auth) {
@@ -56,7 +56,7 @@ export default function LoginPage() {
     }
   };
 
-  if (loading || user) {
+  if (isUserLoading || user) {
     return <LoginSkeleton />;
   }
 
