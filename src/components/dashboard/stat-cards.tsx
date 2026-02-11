@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Footprints, Wallet, CircleDollarSign } from 'lucide-react';
 import type { User } from 'firebase/auth';
+import Image from 'next/image';
 
 interface StatCardsProps {
   user: User | null;
@@ -30,7 +31,7 @@ export function StatCards({
     {
       title: `Welcome, ${user?.displayName?.split(' ')[0] || 'User'}!`,
       value: "Let's get moving",
-      icon: <img src="/logo.png" alt="EarnBull Logo" width={24} height={24} />,
+      icon: <Image src="/logo.png" alt="EarnBull Logo" width={24} height={24} />,
       description: 'Your daily progress',
     },
     {

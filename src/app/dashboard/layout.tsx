@@ -18,6 +18,7 @@ import { signOut } from '@/firebase/auth/utils';
 import { useAuth } from '@/firebase';
 import type { User } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
 
 function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
   return (
@@ -27,7 +28,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
           href="/dashboard"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
-          <img src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
+          <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
           <span className="sr-only">EarnBull</span>
         </Link>
         <h1 className="text-lg font-headline font-semibold text-foreground">
@@ -67,7 +68,7 @@ function DashboardSkeleton() {
             href="/dashboard"
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
-            <img src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
+            <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
             <span className="sr-only">EarnBull</span>
           </Link>
           <h1 className="text-lg font-headline font-semibold text-foreground">
@@ -93,15 +94,15 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useUser();
+  const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isUserLoading && !user) {
       router.push('/');
     }
-  }, [user, loading, router]);
+  }, [user, isUserLoading, router]);
 
   const handleLogout = async () => {
     if (auth) {
@@ -109,7 +110,7 @@ export default function DashboardLayout({
     }
   };
 
-  if (loading || !user) {
+  if (isUserLoading || !user) {
     return <DashboardSkeleton />;
   }
 
