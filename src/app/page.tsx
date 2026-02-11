@@ -17,7 +17,7 @@ function LoginSkeleton() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-20 w-20">
-            <Logo />
+            <Logo priority />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
@@ -65,7 +65,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-20 w-20">
-            <Logo />
+            <Logo priority />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull

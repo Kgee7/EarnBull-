@@ -1,6 +1,6 @@
-import Image from "next/image";
+import Image from 'next/image';
 
-export function Logo() {
+export function Logo({priority = false}: {priority?: boolean}) {
   return (
     <Image
       src="/logo.png"
@@ -8,6 +8,7 @@ export function Logo() {
       width={100}
       height={100}
       className="rounded-full"
+      priority={priority}
     />
   );
 }
