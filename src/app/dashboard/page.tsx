@@ -2,7 +2,6 @@
 import { MainDashboard } from "@/components/dashboard/main-dashboard";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useUser } from "@/firebase";
-
 export default function DashboardPage() {
   const { user } = useUser();
   return (
