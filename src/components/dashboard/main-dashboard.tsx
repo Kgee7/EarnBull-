@@ -79,9 +79,9 @@ export function MainDashboard() {
     useCollection<Transaction>(transactionsQuery);
 
   const steps = dailyStepData?.[0]?.stepCount ?? 0;
-  const bullCoins = userProfile?.bullCoinBalance ?? 0;
-  const usdBalance = userProfile?.usdBalance ?? 0;
-  const ghsBalance = userProfile?.ghsBalance ?? 0;
+  const bullCoins = Number(userProfile?.bullCoinBalance) || 0;
+  const usdBalance = Number(userProfile?.usdBalance) || 0;
+  const ghsBalance = Number(userProfile?.ghsBalance) || 0;
   const goals = userProfile?.dailyGoals ?? [
     { name: "Bronze", steps: 2000, reward: 20 },
     { name: "Silver", steps: 5000, reward: 50 },
