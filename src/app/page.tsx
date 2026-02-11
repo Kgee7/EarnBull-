@@ -15,8 +15,8 @@ function LoginSkeleton() {
      <main className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-20 w-20">
-            <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
+          <div className="mx-auto mb-4 flex justify-center">
+            <img src="/logo.png" alt="EarnBull Logo" className="h-20 w-20" />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
@@ -63,8 +63,8 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-20 w-20">
-            <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
+          <div className="mx-auto mb-4 flex justify-center">
+            <img src="/logo.png" alt="EarnBull Logo" className="h-20 w-20" />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull

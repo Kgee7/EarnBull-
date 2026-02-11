@@ -27,9 +27,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
           href="/dashboard"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
-          <div className="h-8 w-8">
-            <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
-          </div>
+          <img src="/logo.png" alt="EarnBull Logo" className="h-8 w-8" />
           <span className="sr-only">EarnBull</span>
         </Link>
         <h1 className="text-lg font-headline font-semibold text-foreground">
@@ -69,9 +67,7 @@ function DashboardSkeleton() {
             href="/dashboard"
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
-            <div className="h-8 w-8">
-                <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
-            </div>
+            <img src="/logo.png" alt="EarnBull Logo" className="h-8 w-8" />
             <span className="sr-only">EarnBull</span>
           </Link>
           <h1 className="text-lg font-headline font-semibold text-foreground">
@@ -102,7 +98,7 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && !user) {
       router.push('/');
     }
   }, [user, loading, router]);
