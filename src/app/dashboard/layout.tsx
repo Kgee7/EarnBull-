@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Logo } from '@/components/icons/logo';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -29,7 +28,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
           <div className="h-8 w-8">
-            <Logo />
+            <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
           </div>
           <span className="sr-only">EarnBull</span>
         </Link>
@@ -71,7 +70,7 @@ function DashboardSkeleton() {
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
             <div className="h-8 w-8">
-              <Logo />
+                <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
             </div>
             <span className="sr-only">EarnBull</span>
           </Link>
@@ -103,7 +102,7 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && user) {
       router.push('/');
     }
   }, [user, loading, router]);

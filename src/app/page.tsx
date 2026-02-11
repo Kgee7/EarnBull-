@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Logo } from '@/components/icons/logo';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -17,7 +16,7 @@ function LoginSkeleton() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-20 w-20">
-            <Logo />
+            <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
@@ -65,7 +64,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-20 w-20">
-            <Logo />
+            <img src="/logo.png" alt="EarnBull Logo" className="h-full w-full rounded-full object-cover" />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
