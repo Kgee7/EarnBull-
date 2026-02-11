@@ -23,15 +23,13 @@ import Image from 'next/image';
 function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
   return (
     <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 z-50">
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-lg font-semibold md:text-base"
-        >
-          <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
-          <span className="sr-only">EarnBull</span>
-        </Link>
-      </nav>
+      <Link
+        href="/dashboard"
+        className="flex items-center gap-2 text-lg font-semibold md:text-base"
+      >
+        <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
+        <span className="sr-only">EarnBull</span>
+      </Link>
       <div className="flex items-center gap-4 md:gap-2 lg:gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -60,15 +58,13 @@ function DashboardSkeleton() {
   return (
     <div className="flex min-h-screen w-full flex-col">
        <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 z-50">
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 text-lg font-semibold md:text-base"
-          >
-            <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
-            <span className="sr-only">EarnBull</span>
-          </Link>
-        </nav>
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 text-lg font-semibold md:text-base"
+        >
+          <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
+          <span className="sr-only">EarnBull</span>
+        </Link>
         <div className="flex items-center gap-4">
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
