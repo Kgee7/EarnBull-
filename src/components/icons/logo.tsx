@@ -1,14 +1,9 @@
-import Image from 'next/image';
-
-export function Logo({priority = false}: {priority?: boolean}) {
+export function Logo() {
   return (
-    <Image
+    <img
       src="/logo.png"
       alt="EarnBull Logo"
-      width={100}
-      height={100}
-      className="rounded-full"
-      priority={priority}
+      className="h-full w-full rounded-full object-cover"
     />
   );
 }
