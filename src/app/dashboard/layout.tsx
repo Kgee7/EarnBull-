@@ -25,12 +25,12 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
     <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 z-50">
       <Link
         href="/dashboard"
-        className="flex items-center gap-2 text-lg font-semibold md:text-base"
+        className="flex items-center gap-2 text-lg font-semibold"
       >
         <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
         <span className="sr-only">EarnBull</span>
       </Link>
-      <div className="flex items-center gap-4 md:gap-2 lg:gap-4">
+      <div className="flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
@@ -60,7 +60,7 @@ function DashboardSkeleton() {
        <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 z-50">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 text-lg font-semibold md:text-base"
+          className="flex items-center gap-2 text-lg font-semibold"
         >
           <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
           <span className="sr-only">EarnBull</span>

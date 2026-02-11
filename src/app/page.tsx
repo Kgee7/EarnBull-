@@ -20,7 +20,7 @@ function LoginSkeleton() {
             <Image src="/logo.png" alt="EarnBull Logo" width={80} height={80} priority />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
-            EarnBull
+            &nbsp;
           </CardTitle>
           <CardDescription className="pt-2 text-base">
             Walk, Earn, and Redeem. Your steps have value.
@@ -68,7 +68,7 @@ export default function LoginPage() {
              <Image src="/logo.png" alt="EarnBull Logo" width={80} height={80} priority />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
-            EarnBull
+            &nbsp;
           </CardTitle>
           <CardDescription className="pt-2 text-base">
             Walk, Earn, and Redeem. Your steps have value.
