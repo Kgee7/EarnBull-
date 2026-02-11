@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Footprints, Wallet, CircleDollarSign, CircleUser } from 'lucide-react';
+import { Footprints, Wallet, CircleDollarSign } from 'lucide-react';
 import type { User } from 'firebase/auth';
 
 interface StatCardsProps {
@@ -30,7 +30,7 @@ export function StatCards({
     {
       title: `Welcome, ${user?.displayName?.split(' ')[0] || 'User'}!`,
       value: "Let's get moving",
-      icon: <CircleUser className="h-4 w-4 text-muted-foreground" />,
+      icon: <img src="/logo.png" alt="EarnBull Logo" width={24} height={24} />,
       description: 'Your daily progress',
     },
     {

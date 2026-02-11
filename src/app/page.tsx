@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { signInWithGoogle } from '@/firebase/auth/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import Image from 'next/image';
 
 
 function LoginSkeleton() {
@@ -17,7 +16,7 @@ function LoginSkeleton() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex justify-center">
-            <Image src="/logo.png" alt="EarnBull Logo" width={80} height={80} />
+            <img src="/logo.png" alt="EarnBull Logo" width={80} height={80} />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
@@ -65,7 +64,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex justify-center">
-             <Image src="/logo.png" alt="EarnBull Logo" width={80} height={80} />
+             <img src="/logo.png" alt="EarnBull Logo" width={80} height={80} />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull

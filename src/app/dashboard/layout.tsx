@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { CircleUser, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,7 +27,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
           href="/dashboard"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
-          <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
+          <img src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
           <span className="sr-only">EarnBull</span>
         </Link>
         <h1 className="text-lg font-headline font-semibold text-foreground">
@@ -68,7 +67,7 @@ function DashboardSkeleton() {
             href="/dashboard"
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
-            <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
+            <img src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
             <span className="sr-only">EarnBull</span>
           </Link>
           <h1 className="text-lg font-headline font-semibold text-foreground">
