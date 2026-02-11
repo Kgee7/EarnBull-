@@ -7,11 +7,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Footprints, Wallet, CircleDollarSign } from 'lucide-react';
-import type { User } from 'firebase/auth';
-import Image from 'next/image';
 
 interface StatCardsProps {
-  user: User | null;
   steps: number;
   bullCoins: number;
   usdBalance: number;
@@ -21,7 +18,6 @@ interface StatCardsProps {
 const GhanianCediIcon = () => <span className="font-bold">₵</span>;
 
 export function StatCards({
-  user,
   steps,
   bullCoins,
   usdBalance,
@@ -50,21 +46,6 @@ export function StatCards({
 
   return (
     <>
-       <Card>
-        <CardHeader className="flex flex-row items-center justify-start space-y-0 pb-2 gap-4">
-           <Image src="/logo.png" alt="EarnBull Logo" width={40} height={40} />
-           <CardTitle className="text-sm font-medium">
-             {`Welcome, ${user?.displayName?.split(' ')[0] || 'User'}!`}
-           </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold font-headline">
-            Let's get moving
-          </div>
-          <p className="text-xs text-muted-foreground">Your daily progress</p>
-        </CardContent>
-      </Card>
-
       {otherStats.map((stat) => (
         <Card key={stat.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

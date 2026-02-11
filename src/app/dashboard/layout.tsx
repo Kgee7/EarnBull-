@@ -31,9 +31,6 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
           <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
           <span className="sr-only">EarnBull</span>
         </Link>
-        <h1 className="text-lg font-headline font-semibold text-foreground">
-          EarnBull Dashboard
-        </h1>
       </nav>
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <DropdownMenu>
@@ -71,9 +68,6 @@ function DashboardSkeleton() {
             <Image src="/logo.png" alt="EarnBull Logo" width={32} height={32} />
             <span className="sr-only">EarnBull</span>
           </Link>
-          <h1 className="text-lg font-headline font-semibold text-foreground">
-            EarnBull Dashboard
-          </h1>
         </nav>
         <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
           <Skeleton className="h-8 w-8 rounded-full" />
