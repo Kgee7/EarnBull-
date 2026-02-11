@@ -27,13 +27,7 @@ export function StatCards({
   usdBalance,
   ghsBalance,
 }: StatCardsProps) {
-  const stats = [
-    {
-      title: `Welcome, ${user?.displayName?.split(' ')[0] || 'User'}!`,
-      value: "Let's get moving",
-      icon: <Image src="/logo.png" alt="EarnBull Logo" width={24} height={24} />,
-      description: 'Your daily progress',
-    },
+  const otherStats = [
     {
       title: 'Steps Today',
       value: steps.toLocaleString(),
@@ -56,7 +50,22 @@ export function StatCards({
 
   return (
     <>
-      {stats.map((stat) => (
+       <Card>
+        <CardHeader className="flex flex-row items-center justify-start space-y-0 pb-2 gap-4">
+           <Image src="/logo.png" alt="EarnBull Logo" width={40} height={40} />
+           <CardTitle className="text-sm font-medium">
+             {`Welcome, ${user?.displayName?.split(' ')[0] || 'User'}!`}
+           </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold font-headline">
+            Let's get moving
+          </div>
+          <p className="text-xs text-muted-foreground">Your daily progress</p>
+        </CardContent>
+      </Card>
+
+      {otherStats.map((stat) => (
         <Card key={stat.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
