@@ -23,6 +23,7 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  setDoc,
 } from 'firebase/firestore';
 
 // Constants
@@ -78,45 +79,47 @@ export function MainDashboard() {
     const oldSteps = prevStepsRef.current;
     const newSteps = steps;
 
-    if (newSteps === oldSteps || !user || !firestore) return;
+    if (profileLoading || newSteps === oldSteps || !user || !firestore) {
+      return;
+    }
 
     const previous1kMilestone = Math.floor(oldSteps / 1000);
     const new1kMilestone = Math.floor(newSteps / 1000);
     
-    let bcEarned = 0;
-    if (new1kMilestone !== previous1kMilestone) {
-        bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
-    }
+    const bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
 
     if (bcEarned !== 0) {
         const userRef = doc(firestore, 'users', user.uid);
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
         const batch = writeBatch(firestore);
 
-        batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
+        // Use `set` with `merge: true` to safely create/update the document.
+        // This avoids errors if the document doesn't exist yet (a race condition on first login).
+        batch.set(userRef, { bullCoinBalance: increment(bcEarned) }, { merge: true });
+        
         batch.set(transactionRef, {
              userId: user.uid,
              type: 'earn',
              amount: bcEarned,
              currency: 'BC',
              date: new Date().toISOString(),
-             description: `Step simulation adjustment`,
+             description: `Step conversion`,
         });
 
         batch.commit().then(() => {
             if (bcEarned > 0) {
-                toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC for your steps.` });
+                toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC.` });
             } else {
-                toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed due to reduced steps.` });
+                toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed.` });
             }
         }).catch(e => {
-            console.error("Error updating balance:", e);
+            console.error("Error updating coin balance:", e);
             toast({ title: "Error", description: "Could not update coin balance.", variant: "destructive"});
         });
     }
 
     prevStepsRef.current = newSteps;
-  }, [steps, user, firestore, toast]);
+  }, [steps, user, firestore, toast, profileLoading]);
 
   // Fetch exchange rate on mount
   useEffect(() => {
