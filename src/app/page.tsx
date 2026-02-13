@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { useAuth, useUser } from '@/firebase';
@@ -75,7 +76,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex justify-center">
-             <img src="/logo.png" alt="EarnBull Logo" width={80} height={80} />
+             <Image src="/logo.png" alt="EarnBull Logo" width={80} height={80} />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull

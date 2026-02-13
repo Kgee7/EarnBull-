@@ -23,12 +23,23 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  addDoc,
 } from 'firebase/firestore';
 
 // Constants
 const BC_PER_1000_STEPS = 10;
 const USD_PER_10_BC = 0.15;
 const MIN_WITHDRAWAL_USD = 1;
+
+// A helper hook to get the previous value of a state or prop.
+function usePrevious<T>(value: T): T | undefined {
+  const ref = useRef<T>();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
+
 
 export function MainDashboard() {
   const { toast } = useToast();
@@ -40,7 +51,7 @@ export function MainDashboard() {
   const [isRateLoading, setIsRateLoading] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [steps, setSteps] = useState(0);
-  const prevStepsRef = useRef(0);
+  const prevSteps = usePrevious(steps);
 
   // Firestore data hooks
   const userDocRef = useMemoFirebase(
@@ -75,7 +86,7 @@ export function MainDashboard() {
 
   // Effect to handle step-to-coin conversion
   useEffect(() => {
-    const oldSteps = prevStepsRef.current;
+    const oldSteps = prevSteps ?? 0;
     const newSteps = steps;
 
     // Guard against running on initial load, or if profile isn't ready.
@@ -89,37 +100,37 @@ export function MainDashboard() {
     const bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
 
     if (bcEarned !== 0) {
-        // Now we know userProfile exists, so userRef is valid and points to an existing doc.
         const userRef = doc(firestore, 'users', user.uid);
-        const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
-        const batch = writeBatch(firestore);
 
-        // We can now safely use updateDoc via the batch, as we've confirmed the doc exists.
-        batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
-        
-        batch.set(transactionRef, {
-             userId: user.uid,
-             type: 'earn',
-             amount: bcEarned,
-             currency: 'BC',
-             date: new Date().toISOString(),
-             description: `Step conversion`,
-        });
-
-        batch.commit().then(() => {
-            if (bcEarned > 0) {
-                toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC.` });
-            } else {
-                toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed.` });
-            }
-        }).catch(e => {
-            console.error("Error updating coin balance:", e);
-            toast({ title: "Error", description: "Could not update coin balance.", variant: "destructive"});
-        });
+        // First, update the balance.
+        updateDoc(userRef, { bullCoinBalance: increment(bcEarned) })
+            .then(() => {
+                // If the balance update succeeds, then record the transaction.
+                const newTransaction: Omit<Transaction, 'id'> = {
+                    userId: user.uid,
+                    type: 'earn',
+                    amount: bcEarned,
+                    currency: 'BC',
+                    date: new Date().toISOString(),
+                    description: `Reward for step milestone`,
+                };
+                return addDoc(collection(firestore, 'users', user.uid, 'transactions'), newTransaction);
+            })
+            .then(() => {
+                // If both succeed, show a confirmation toast.
+                if (bcEarned > 0) {
+                    toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC.` });
+                } else {
+                    toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed.` });
+                }
+            })
+            .catch(e => {
+                console.error("Error updating coin balance:", e);
+                toast({ title: "Error", description: "Could not update coin balance.", variant: "destructive"});
+            });
     }
 
-    prevStepsRef.current = newSteps;
-  }, [steps, user, firestore, toast, profileLoading, userProfile]);
+  }, [steps, prevSteps, user, firestore, toast, profileLoading, userProfile]);
 
   // Fetch exchange rate on mount
   useEffect(() => {
