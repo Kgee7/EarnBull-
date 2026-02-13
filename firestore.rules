@@ -74,10 +74,10 @@ service cloud.firestore {
 
     /**
      * Validates a user profile on update.
-     * Ensures the user owns the existing document and that the `id` field remains unchanged.
+     * Allows partial updates by ensuring that if the `id` field is present, it is not changed.
      */
     function isUpdatingValidUserProfile(userId) {
-      return isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      return isExistingOwner(userId) && (!('id' in request.resource.data) || request.resource.data.id == resource.data.id);
     }
 
     /**
@@ -91,10 +91,10 @@ service cloud.firestore {
 
     /**
      * Validates subcollection documents on update.
-     * Ensures the owner is updating the document and that the `userId` field is immutable.
+     * Allows partial updates by ensuring that if the `userId` field is present, it is not changed.
      */
     function isUpdatingValidSubcollectionDoc(userId) {
-      return isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      return isExistingOwner(userId) && (!('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId);
     }
 
     /**
