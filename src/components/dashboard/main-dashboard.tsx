@@ -167,7 +167,7 @@ export function MainDashboard() {
           amount: bcEarned,
           currency: 'BC',
           date: new Date().toISOString(),
-          description: `Reward for reaching ${new1kMilestone * 1000} steps`,
+          description: `Reward for step milestone`,
         };
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
         batch.set(transactionRef, newTransaction);
@@ -182,8 +182,8 @@ export function MainDashboard() {
         });
       } else if (bcEarned > 0) {
         toast({
-          title: 'Goal Reached!',
-          description: `You earned ${bcEarned} BC!`,
+          title: 'Coins Earned!',
+          description: `You earned ${bcEarned} BC for your steps.`,
         });
       }
     } catch (e) {
