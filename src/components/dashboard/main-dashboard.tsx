@@ -126,16 +126,12 @@ export function MainDashboard() {
     const oldSteps = steps;
     if (newSteps === oldSteps) return;
 
+    const previous1kMilestone = Math.floor(oldSteps / 1000);
+    const new1kMilestone = Math.floor(newSteps / 1000);
+    
     let bcEarned = 0;
-    let new1kMilestone = 0;
-
-    // Only calculate rewards if steps are increasing
-    if (newSteps > oldSteps) {
-      const previous1kMilestone = Math.floor(oldSteps / 1000);
-      new1kMilestone = Math.floor(newSteps / 1000);
-      if (new1kMilestone > previous1kMilestone) {
+    if (new1kMilestone !== previous1kMilestone) {
         bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
-      }
     }
 
     const stepDoc = dailyStepData?.[0];
@@ -156,18 +152,18 @@ export function MainDashboard() {
         });
       }
   
-      // If coins were earned, update balance and add transaction
-      if (bcEarned > 0) {
+      // If coins were earned or reclaimed, update balance and add transaction
+      if (bcEarned !== 0) {
         const userRef = doc(firestore, 'users', user.uid);
         batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
   
         const newTransaction: Omit<Transaction, 'id'> = {
           userId: user.uid,
-          type: 'earn',
+          type: 'earn', // Keep type as 'earn', amount will be negative for reclaim
           amount: bcEarned,
           currency: 'BC',
           date: new Date().toISOString(),
-          description: `Reward for step milestone`,
+          description: `Step simulation adjustment`,
         };
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
         batch.set(transactionRef, newTransaction);
@@ -184,6 +180,11 @@ export function MainDashboard() {
         toast({
           title: 'Coins Earned!',
           description: `You earned ${bcEarned} BC for your steps.`,
+        });
+      } else if (bcEarned < 0) {
+         toast({
+          title: 'Coins Reclaimed',
+          description: `${-bcEarned} BC were reclaimed due to reduced steps.`,
         });
       }
     } catch (e) {
