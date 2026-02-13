@@ -73,14 +73,6 @@ service cloud.firestore {
     }
 
     /**
-     * Validates a user profile on update.
-     * Allows partial updates by ensuring that if the `id` field is present, it is not changed.
-     */
-    function isUpdatingValidUserProfile(userId) {
-      return isExistingOwner(userId) && (!('id' in request.resource.data) || request.resource.data.id == resource.data.id);
-    }
-
-    /**
      * Validates subcollection documents (transactions, requests, etc.) on creation.
      * Ensures the owner is creating the document and that the internal `userId` field
      * matches the path, establishing a permanent ownership link.
@@ -116,7 +108,7 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow list: if false; // Explicitly deny listing the /users collection for privacy.
       allow create: if isCreatingValidUserProfile(userId);
-      allow update: if isUpdatingValidUserProfile(userId);
+      allow update: if isExistingOwner(userId); // Allow user to update their own profile.
       allow delete: if false; // Deleting a user profile is a sensitive, destructive action. Disable by default.
 
       /**
