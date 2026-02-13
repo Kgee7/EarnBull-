@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
 import { processMomoWithdrawal } from '@/ai/flows/momo-withdrawal';
 import type { Transaction, UserProfile, Goal } from '@/lib/types';
@@ -11,7 +11,7 @@ import { WalletCard } from '@/components/dashboard/wallet-card';
 import { ConversionCard } from '@/components/dashboard/conversion-card';
 import { WithdrawCard } from '@/components/dashboard/withdraw-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import {
   doc,
   collection,
@@ -41,7 +41,6 @@ export function MainDashboard() {
   const [isRateLoading, setIsRateLoading] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [steps, setSteps] = useState(0);
-  const processedStepsRef = useRef(0);
 
   // Firestore data hooks
   const userDocRef = useMemoFirebase(
@@ -74,60 +73,72 @@ export function MainDashboard() {
     { name: "Gold", steps: 10000, reward: 100 },
   ];
 
-  // Effect to handle step-to-coin conversion
-  useEffect(() => {
-    // Guard against running if the profile or user isn't ready.
-    if (profileLoading || !userProfile || !user || !firestore) {
+  const handleStepUpdate = async (newSteps: number) => {
+    const previousSteps = steps;
+    setSteps(newSteps); // Update UI optimistically
+
+    if (!user || !firestore) {
+      toast({ title: "System not ready", description: "Please wait a moment and try again.", variant: "destructive" });
       return;
     }
 
-    const lastProcessed = processedStepsRef.current;
-    const newSteps = steps;
-
-    if (newSteps === lastProcessed) {
-      return; // No change to process.
-    }
-
-    const previous1kMilestone = Math.floor(lastProcessed / 1000);
+    const previous1kMilestone = Math.floor(previousSteps / 1000);
     const new1kMilestone = Math.floor(newSteps / 1000);
-    
     const bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
 
-    if (bcEarned !== 0) {
-      const userRef = doc(firestore, 'users', user.uid);
-      
-      // Important: Update the processed steps reference immediately
-      // to prevent re-processing the same steps.
-      processedStepsRef.current = newSteps;
-
-      updateDoc(userRef, { bullCoinBalance: increment(bcEarned) })
-        .then(() => {
-          const newTransaction: Omit<Transaction, 'id'> = {
-            userId: user.uid,
-            type: 'earn',
-            amount: bcEarned,
-            currency: 'BC',
-            date: new Date().toISOString(),
-            description: `Reward for step milestone`,
-          };
-          return addDoc(collection(firestore, 'users', user.uid, 'transactions'), newTransaction);
-        })
-        .then(() => {
-          if (bcEarned > 0) {
-            toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC.` });
-          } else {
-            toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed.` });
-          }
-        })
-        .catch(e => {
-          // If the update fails, revert the processed steps ref to the last known good value.
-          processedStepsRef.current = lastProcessed;
-          console.error("Error updating coin balance:", e);
-          toast({ title: "Error", description: "Could not update coin balance.", variant: "destructive"});
-        });
+    if (bcEarned === 0) {
+      return; // No 1k milestone crossed, nothing to do
     }
-  }, [steps, profileLoading, userProfile, user, firestore, toast]);
 
+    const userRef = doc(firestore, 'users', user.uid);
+    try {
+      const batch = writeBatch(firestore);
+
+      // Update balance
+      batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
+
+      // Create transaction record
+      const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+      const newTransaction: Omit<Transaction, 'id'> = {
+        userId: user.uid,
+        type: 'earn',
+        amount: bcEarned,
+        currency: 'BC',
+        date: new Date().toISOString(),
+        description: `Reward for step milestone`,
+      };
+      batch.set(transactionRef, newTransaction);
+      
+      await batch.commit();
+
+      toast({
+        title: bcEarned > 0 ? 'Coins Earned!' : 'Coins Reclaimed',
+        description: bcEarned > 0 ? `You earned ${bcEarned} Bull Coins.` : `${-bcEarned} Bull Coins were reclaimed.`,
+      });
+
+    } catch (e: any) {
+      console.error("Error during step-to-coin conversion:", e);
+      // Revert optimistic UI update
+      setSteps(previousSteps);
+      
+      toast({
+        title: "Update Failed",
+        description: "Could not convert steps to coins. Your balance has not been changed.",
+        variant: "destructive",
+      });
+
+      // Emit a detailed permission error if applicable
+      if (e.code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'update',
+          requestResourceData: { bullCoinBalance: `increment(${bcEarned})` },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      }
+    }
+  };
+  
   // Fetch exchange rate on mount
   useEffect(() => {
     async function fetchRate() {
@@ -429,7 +440,7 @@ export function MainDashboard() {
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
           <DailyGoalsCard
             currentSteps={steps}
-            onStepUpdate={setSteps}
+            onStepUpdate={handleStepUpdate}
             goals={goals}
             onGoalsUpdate={handleGoalsUpdate}
           />
