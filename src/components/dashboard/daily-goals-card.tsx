@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react";
@@ -46,7 +47,7 @@ interface DailyGoalsCardProps {
 
 
 export function DailyGoalsCard({ currentSteps, onStepUpdate, goals, onGoalsUpdate }: DailyGoalsCardProps) {
-    const maxSteps = 50000;
+    const maxSteps = 5000000;
     const [editableGoals, setEditableGoals] = useState(goals);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
