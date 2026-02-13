@@ -25,12 +25,3 @@ export type UserProfile = {
   ghsBalance: number;
   dailyGoals?: Goal[];
 };
-
-export type DailyStepCount = {
-  id: string;
-  userId: string;
-  date: string;
-  stepCount: number;
-};
-
-    

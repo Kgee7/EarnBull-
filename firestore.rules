@@ -6,8 +6,7 @@
  *
  * Data Structure: The entire data model is hierarchical, rooted at the top-level `/users` collection.
  * Each user's data is stored under `/users/{userId}`, where `{userId}` is the user's unique
- * authentication ID. All related data, such as `transactions`, `withdrawalRequests`, and
- * `dailyStepCounts`, are stored in subcollections under this path.
+ * authentication ID. All related data, such as `transactions` and `withdrawalRequests` are stored in subcollections under this path.
  *
  * Key Security Decisions:
  * - Deny-All Default: Access is implicitly denied unless explicitly granted by a rule.
@@ -133,20 +132,6 @@ service cloud.firestore {
        * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
        */
       match /withdrawalRequests/{requestId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isCreatingValidSubcollectionDoc(userId);
-        allow update: if isUpdatingValidSubcollectionDoc(userId);
-        allow delete: if isExistingOwner(userId);
-      }
-
-      /**
-       * @description A user can manage their own daily step count records.
-       * @path /users/{userId}/dailyStepCounts/{stepCountId}
-       * @allow (delete) User 'user_abc' deletes one of their own step count records.
-       * @deny (update) User 'user_xyz' tries to modify a step count record for user 'user_abc'.
-       * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
-       */
-      match /dailyStepCounts/{stepCountId} {
         allow get, list: if isOwner(userId);
         allow create: if isCreatingValidSubcollectionDoc(userId);
         allow update: if isUpdatingValidSubcollectionDoc(userId);

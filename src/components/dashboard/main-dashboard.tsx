@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
 import { processMomoWithdrawal } from '@/ai/flows/momo-withdrawal';
-import type { Transaction, UserProfile, DailyStepCount, Goal } from '@/lib/types';
+import type { Transaction, UserProfile, Goal } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { DailyGoalsCard } from '@/components/dashboard/daily-goals-card';
@@ -16,7 +16,6 @@ import {
   doc,
   collection,
   query,
-  where,
   orderBy,
   limit,
   writeBatch,
@@ -40,6 +39,8 @@ export function MainDashboard() {
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const [isRateLoading, setIsRateLoading] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [steps, setSteps] = useState(0);
+  const prevStepsRef = useRef(0);
 
   // Firestore data hooks
   const userDocRef = useMemoFirebase(
@@ -48,21 +49,6 @@ export function MainDashboard() {
   );
   const { data: userProfile, isLoading: profileLoading } =
     useDoc<UserProfile>(userDocRef);
-
-  const today = new Date().toISOString().split('T')[0];
-  const stepsQuery = useMemoFirebase(
-    () =>
-      user
-        ? query(
-            collection(firestore, 'users', user.uid, 'dailyStepCounts'),
-            where('date', '==', today),
-            limit(1)
-          )
-        : null,
-    [user, firestore, today]
-  );
-  const { data: dailyStepData, isLoading: stepsLoading } =
-    useCollection<DailyStepCount>(stepsQuery);
   
   const transactionsQuery = useMemoFirebase(
     () =>
@@ -78,7 +64,6 @@ export function MainDashboard() {
   const { data: transactions, isLoading: transactionsLoading } =
     useCollection<Transaction>(transactionsQuery);
 
-  const steps = dailyStepData?.[0]?.stepCount ?? 0;
   const bullCoins = Number(userProfile?.bullCoinBalance) || 0;
   const usdBalance = Number(userProfile?.usdBalance) || 0;
   const ghsBalance = Number(userProfile?.ghsBalance) || 0;
@@ -87,6 +72,51 @@ export function MainDashboard() {
     { name: "Silver", steps: 5000, reward: 50 },
     { name: "Gold", steps: 10000, reward: 100 },
   ];
+
+  // Effect to handle step-to-coin conversion
+  useEffect(() => {
+    const oldSteps = prevStepsRef.current;
+    const newSteps = steps;
+
+    if (newSteps === oldSteps || !user || !firestore) return;
+
+    const previous1kMilestone = Math.floor(oldSteps / 1000);
+    const new1kMilestone = Math.floor(newSteps / 1000);
+    
+    let bcEarned = 0;
+    if (new1kMilestone !== previous1kMilestone) {
+        bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
+    }
+
+    if (bcEarned !== 0) {
+        const userRef = doc(firestore, 'users', user.uid);
+        const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+        const batch = writeBatch(firestore);
+
+        batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
+        batch.set(transactionRef, {
+             userId: user.uid,
+             type: 'earn',
+             amount: bcEarned,
+             currency: 'BC',
+             date: new Date().toISOString(),
+             description: `Step simulation adjustment`,
+        });
+
+        batch.commit().then(() => {
+            if (bcEarned > 0) {
+                toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC for your steps.` });
+            } else {
+                toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed due to reduced steps.` });
+            }
+        }).catch(e => {
+            console.error("Error updating balance:", e);
+            toast({ title: "Error", description: "Could not update coin balance.", variant: "destructive"});
+        });
+    }
+
+    prevStepsRef.current = newSteps;
+  }, [steps, user, firestore, toast]);
 
   // Fetch exchange rate on mount
   useEffect(() => {
@@ -118,84 +148,6 @@ export function MainDashboard() {
     }
     fetchRate();
   }, [toast]);
-
-  // Handlers
-  const handleStepUpdate = async (newSteps: number) => {
-    if (!user || !firestore) return;
-
-    const oldSteps = steps;
-    if (newSteps === oldSteps) return;
-
-    const previous1kMilestone = Math.floor(oldSteps / 1000);
-    const new1kMilestone = Math.floor(newSteps / 1000);
-    
-    let bcEarned = 0;
-    if (new1kMilestone !== previous1kMilestone) {
-        bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
-    }
-
-    const stepDoc = dailyStepData?.[0];
-  
-    try {
-      const batch = writeBatch(firestore);
-  
-      // Update step count (or create new daily doc)
-      if (stepDoc) {
-        const stepDocRef = doc(firestore, 'users', user.uid, 'dailyStepCounts', stepDoc.id);
-        batch.update(stepDocRef, { stepCount: newSteps });
-      } else {
-        const stepDocRef = doc(collection(firestore, 'users', user.uid, 'dailyStepCounts'));
-        batch.set(stepDocRef, {
-          userId: user.uid,
-          date: today,
-          stepCount: newSteps,
-        });
-      }
-  
-      // If coins were earned or reclaimed, update balance and add transaction
-      if (bcEarned !== 0) {
-        const userRef = doc(firestore, 'users', user.uid);
-        batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
-  
-        const newTransaction: Omit<Transaction, 'id'> = {
-          userId: user.uid,
-          type: 'earn', // Keep type as 'earn', amount will be negative for reclaim
-          amount: bcEarned,
-          currency: 'BC',
-          date: new Date().toISOString(),
-          description: `Step simulation adjustment`,
-        };
-        const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
-        batch.set(transactionRef, newTransaction);
-      }
-  
-      await batch.commit();
-  
-      if (newSteps === 0 && oldSteps > 0) {
-        toast({
-          title: 'Simulation Reset',
-          description: "Today's steps have been reset to 0.",
-        });
-      } else if (bcEarned > 0) {
-        toast({
-          title: 'Coins Earned!',
-          description: `You earned ${bcEarned} BC for your steps.`,
-        });
-      } else if (bcEarned < 0) {
-         toast({
-          title: 'Coins Reclaimed',
-          description: `${-bcEarned} BC were reclaimed due to reduced steps.`,
-        });
-      }
-    } catch (e) {
-      console.error("Error updating steps:", e);
-      toast({
-        title: "Error",
-        description: "Could not save your progress. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleGoalsUpdate = async (newGoals: Goal[]) => {
     if (!user || !firestore || !userDocRef) return;
@@ -441,7 +393,7 @@ export function MainDashboard() {
     }
   };
 
-  const isLoading = userLoading || profileLoading || stepsLoading || transactionsLoading;
+  const isLoading = userLoading || profileLoading || transactionsLoading;
 
   if (isLoading) {
     return (
@@ -467,7 +419,7 @@ export function MainDashboard() {
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
           <DailyGoalsCard
             currentSteps={steps}
-            onStepUpdate={handleStepUpdate}
+            onStepUpdate={setSteps}
             goals={goals}
             onGoalsUpdate={handleGoalsUpdate}
           />
