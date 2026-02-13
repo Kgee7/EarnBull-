@@ -4,18 +4,18 @@ import {
   signInWithPopup,
   type Auth,
   signOut as firebaseSignOut,
+  type User,
 } from 'firebase/auth';
-import { doc, setDoc, getFirestore, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getFirestore, getDoc, type Firestore } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-export async function signInWithGoogle(auth: Auth) {
-  const provider = new GoogleAuthProvider();
+
+// This new function runs in the background to create the user document if it doesn't exist.
+// It is NOT awaited by the main sign-in flow to avoid blocking the UI.
+async function manageUserDocument(user: User, db: Firestore) {
+  const userRef = doc(db, 'users', user.uid);
   try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const db = getFirestore(auth.app);
-    const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
@@ -36,17 +36,34 @@ export async function signInWithGoogle(auth: Auth) {
         ],
       };
       
-      await setDoc(userRef, userData, { merge: true })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: userRef.path,
-            operation: 'create',
-            requestResourceData: userData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-          throw permissionError;
-        });
+      // This setDoc operation might fail due to permissions, and the error will be caught below.
+      await setDoc(userRef, userData, { merge: true });
     }
+  } catch (e: any) {
+      // This will catch permission errors from either getDoc or setDoc.
+      // We create a detailed error and emit it globally, where FirebaseErrorListener will catch it.
+      const permissionError = new FirestorePermissionError({
+        path: userRef.path,
+        operation: 'write', // 'write' is a safe generic operation for this create/check flow.
+        requestResourceData: userData,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+  }
+}
+
+
+export async function signInWithGoogle(auth: Auth) {
+  const provider = new GoogleAuthProvider();
+  try {
+    // 1. Await the sign-in popup
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const db = getFirestore(auth.app);
+
+    // 2. Start the database work in the background (fire-and-forget)
+    //    This makes the login feel instant.
+    manageUserDocument(user, db);
+
   } catch (error: any) {
     if (error.code === 'auth/popup-closed-by-user') {
       // This is not an application error. The user simply closed the login popup.
