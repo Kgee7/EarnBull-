@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { useAuth, useUser } from '@/firebase';
@@ -56,9 +55,7 @@ export default function LoginPage() {
       setIsSigningIn(true);
       const loggedInUser = await signInWithGoogle(auth);
       if (loggedInUser) {
-        // The router push is now handled by the useEffect, 
-        // but we keep the isSigningIn state to provide UI feedback.
-        // The page will redirect as soon as the `user` state propagates.
+        // The page will redirect as soon as the `user` state propagates from the useEffect hook.
       } else {
         // If sign-in fails or is cancelled, stop the loading indicator.
         setIsSigningIn(false);
@@ -76,7 +73,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex justify-center">
-             <Image src="/logo.png" alt="EarnBull Logo" width={80} height={80} />
+             <img src="/logo.png" alt="EarnBull Logo" width="80" height="80" />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
