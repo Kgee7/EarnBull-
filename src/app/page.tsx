@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { signInWithGoogle } from '@/firebase/auth/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -42,7 +42,9 @@ export default function LoginPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
+  // This effect handles the case where a user is already logged in when visiting the page.
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
@@ -51,11 +53,21 @@ export default function LoginPage() {
 
   const handleSignIn = async () => {
     if (auth) {
-      await signInWithGoogle(auth);
+      setIsSigningIn(true);
+      const loggedInUser = await signInWithGoogle(auth);
+      if (loggedInUser) {
+        // The router push is now handled by the useEffect, 
+        // but we keep the isSigningIn state to provide UI feedback.
+        // The page will redirect as soon as the `user` state propagates.
+      } else {
+        // If sign-in fails or is cancelled, stop the loading indicator.
+        setIsSigningIn(false);
+      }
     }
   };
 
-  if (isUserLoading || user) {
+  // Show a skeleton if the auth state is loading, if we're actively signing in, or if a user object exists (and we're about to redirect).
+  if (isUserLoading || isSigningIn || user) {
     return <LoginSkeleton />;
   }
 
@@ -75,7 +87,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <Button size="lg" className="w-full" onClick={handleSignIn}>
+            <Button size="lg" className="w-full" onClick={handleSignIn} disabled={isSigningIn}>
               <GoogleIcon className="mr-2 h-6 w-6" />
               Sign in with Google
             </Button>

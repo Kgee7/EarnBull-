@@ -54,7 +54,7 @@ async function manageUserDocument(user: User, db: Firestore) {
 }
 
 
-export async function signInWithGoogle(auth: Auth) {
+export async function signInWithGoogle(auth: Auth): Promise<User | null> {
   const provider = new GoogleAuthProvider();
   try {
     // 1. Await the sign-in popup
@@ -65,16 +65,20 @@ export async function signInWithGoogle(auth: Auth) {
     // 2. Start the database work in the background (fire-and-forget)
     //    This makes the login feel instant.
     manageUserDocument(user, db);
+    
+    // 3. Return the user to signal success to the caller
+    return user;
 
   } catch (error: any) {
     if (error.code === 'auth/popup-closed-by-user') {
       // This is not an application error. The user simply closed the login popup.
       console.log("Sign-in popup closed by user.");
     } else {
-      // For any other unexpected error, log it and let the framework handle it.
+      // For any other unexpected error, log it.
       console.error('Error during Google sign-in:', error);
-      throw error;
     }
+    // Return null to signal failure to the caller
+    return null;
   }
 }
 
@@ -85,5 +89,3 @@ export async function signOut(auth: Auth) {
     console.error('Error signing out:', error);
   }
 }
-
-    
