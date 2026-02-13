@@ -62,9 +62,11 @@ export async function signInWithGoogle(auth: Auth): Promise<User | null> {
     const user = result.user;
     const db = getFirestore(auth.app);
 
-    // 2. Start the database work in the background (fire-and-forget)
-    //    This makes the login feel instant.
-    manageUserDocument(user, db);
+    // 2. IMPORTANT: Await the document management.
+    // This ensures the user profile document exists before any other app logic runs.
+    // It prevents race conditions on the dashboard. This adds a slight, one-time
+    // delay for new users, but guarantees data integrity.
+    await manageUserDocument(user, db);
     
     // 3. Return the user to signal success to the caller
     return user;
