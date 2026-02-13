@@ -46,7 +46,7 @@ interface DailyGoalsCardProps {
 
 
 export function DailyGoalsCard({ currentSteps, onStepUpdate, goals, onGoalsUpdate }: DailyGoalsCardProps) {
-    const maxSteps = 5000000;
+    const maxSteps = 50000;
     const [editableGoals, setEditableGoals] = useState(goals);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
