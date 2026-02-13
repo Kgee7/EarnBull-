@@ -31,16 +31,6 @@ const BC_PER_1000_STEPS = 10;
 const USD_PER_10_BC = 0.15;
 const MIN_WITHDRAWAL_USD = 1;
 
-// A helper hook to get the previous value of a state or prop.
-function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
-  useEffect(() => {
-    ref.current = value;
-  });
-  return ref.current;
-}
-
-
 export function MainDashboard() {
   const { toast } = useToast();
   const { user, isUserLoading: userLoading } = useUser();
@@ -51,7 +41,7 @@ export function MainDashboard() {
   const [isRateLoading, setIsRateLoading] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [steps, setSteps] = useState(0);
-  const prevSteps = usePrevious(steps);
+  const processedStepsRef = useRef(0);
 
   // Firestore data hooks
   const userDocRef = useMemoFirebase(
@@ -86,51 +76,57 @@ export function MainDashboard() {
 
   // Effect to handle step-to-coin conversion
   useEffect(() => {
-    const oldSteps = prevSteps ?? 0;
-    const newSteps = steps;
-
-    // Guard against running on initial load, or if profile isn't ready.
-    if (profileLoading || !userProfile || newSteps === oldSteps || !user || !firestore) {
+    // Guard against running if the profile or user isn't ready.
+    if (profileLoading || !userProfile || !user || !firestore) {
       return;
     }
 
-    const previous1kMilestone = Math.floor(oldSteps / 1000);
+    const lastProcessed = processedStepsRef.current;
+    const newSteps = steps;
+
+    if (newSteps === lastProcessed) {
+      return; // No change to process.
+    }
+
+    const previous1kMilestone = Math.floor(lastProcessed / 1000);
     const new1kMilestone = Math.floor(newSteps / 1000);
     
     const bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
 
     if (bcEarned !== 0) {
-        const userRef = doc(firestore, 'users', user.uid);
+      const userRef = doc(firestore, 'users', user.uid);
+      
+      // Important: Update the processed steps reference immediately
+      // to prevent re-processing the same steps.
+      processedStepsRef.current = newSteps;
 
-        // First, update the balance.
-        updateDoc(userRef, { bullCoinBalance: increment(bcEarned) })
-            .then(() => {
-                // If the balance update succeeds, then record the transaction.
-                const newTransaction: Omit<Transaction, 'id'> = {
-                    userId: user.uid,
-                    type: 'earn',
-                    amount: bcEarned,
-                    currency: 'BC',
-                    date: new Date().toISOString(),
-                    description: `Reward for step milestone`,
-                };
-                return addDoc(collection(firestore, 'users', user.uid, 'transactions'), newTransaction);
-            })
-            .then(() => {
-                // If both succeed, show a confirmation toast.
-                if (bcEarned > 0) {
-                    toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC.` });
-                } else {
-                    toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed.` });
-                }
-            })
-            .catch(e => {
-                console.error("Error updating coin balance:", e);
-                toast({ title: "Error", description: "Could not update coin balance.", variant: "destructive"});
-            });
+      updateDoc(userRef, { bullCoinBalance: increment(bcEarned) })
+        .then(() => {
+          const newTransaction: Omit<Transaction, 'id'> = {
+            userId: user.uid,
+            type: 'earn',
+            amount: bcEarned,
+            currency: 'BC',
+            date: new Date().toISOString(),
+            description: `Reward for step milestone`,
+          };
+          return addDoc(collection(firestore, 'users', user.uid, 'transactions'), newTransaction);
+        })
+        .then(() => {
+          if (bcEarned > 0) {
+            toast({ title: 'Coins Earned!', description: `You earned ${bcEarned} BC.` });
+          } else {
+            toast({ title: 'Coins Reclaimed', description: `${-bcEarned} BC were reclaimed.` });
+          }
+        })
+        .catch(e => {
+          // If the update fails, revert the processed steps ref to the last known good value.
+          processedStepsRef.current = lastProcessed;
+          console.error("Error updating coin balance:", e);
+          toast({ title: "Error", description: "Could not update coin balance.", variant: "destructive"});
+        });
     }
-
-  }, [steps, prevSteps, user, firestore, toast, profileLoading, userProfile]);
+  }, [steps, profileLoading, userProfile, user, firestore, toast]);
 
   // Fetch exchange rate on mount
   useEffect(() => {
