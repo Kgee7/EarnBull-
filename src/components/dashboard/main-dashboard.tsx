@@ -24,6 +24,7 @@ import {
   deleteDoc,
   getDocs,
   addDoc,
+  setDoc,
 } from 'firebase/firestore';
 
 // Constants
@@ -94,8 +95,9 @@ export function MainDashboard() {
     try {
       const batch = writeBatch(firestore);
 
-      // Update balance
-      batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
+      // Use set with merge:true to robustly create or update the user document.
+      // This solves the race condition where an update could be called before the doc exists.
+      batch.set(userRef, { bullCoinBalance: increment(bcEarned) }, { merge: true });
 
       // Create transaction record
       const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
