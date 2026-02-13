@@ -15,27 +15,29 @@ import { FirestorePermissionError } from '@/firebase/errors';
 // It is NOT awaited by the main sign-in flow to avoid blocking the UI.
 async function manageUserDocument(user: User, db: Firestore) {
   const userRef = doc(db, 'users', user.uid);
+  
+  // Define userData here, so it's available in the catch block if getDoc fails.
+  const { uid, displayName, email } = user;
+  const userData = {
+    id: uid,
+    googleId: uid,
+    email: email || '',
+    displayName: displayName || 'New User',
+    creationDate: new Date().toISOString(),
+    bullCoinBalance: 0,
+    usdBalance: 0,
+    ghsBalance: 0,
+    dailyGoals: [
+      { name: "Bronze", steps: 2000, reward: 20 },
+      { name: "Silver", steps: 5000, reward: 50 },
+      { name: "Gold", steps: 10000, reward: 100 },
+    ],
+  };
+
   try {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      const { uid, displayName, email } = user;
-      const userData = {
-        id: uid,
-        googleId: uid,
-        email: email || '',
-        displayName: displayName || 'New User',
-        creationDate: new Date().toISOString(),
-        bullCoinBalance: 0,
-        usdBalance: 0,
-        ghsBalance: 0,
-        dailyGoals: [
-          { name: "Bronze", steps: 2000, reward: 20 },
-          { name: "Silver", steps: 5000, reward: 50 },
-          { name: "Gold", steps: 10000, reward: 100 },
-        ],
-      };
-      
       // This setDoc operation might fail due to permissions, and the error will be caught below.
       await setDoc(userRef, userData, { merge: true });
     }
