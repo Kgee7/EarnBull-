@@ -23,7 +23,6 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
-  setDoc,
 } from 'firebase/firestore';
 
 // Constants
@@ -79,7 +78,8 @@ export function MainDashboard() {
     const oldSteps = prevStepsRef.current;
     const newSteps = steps;
 
-    if (profileLoading || newSteps === oldSteps || !user || !firestore) {
+    // Guard against running on initial load, or if profile isn't ready.
+    if (profileLoading || !userProfile || newSteps === oldSteps || !user || !firestore) {
       return;
     }
 
@@ -89,13 +89,13 @@ export function MainDashboard() {
     const bcEarned = (new1kMilestone - previous1kMilestone) * BC_PER_1000_STEPS;
 
     if (bcEarned !== 0) {
+        // Now we know userProfile exists, so userRef is valid and points to an existing doc.
         const userRef = doc(firestore, 'users', user.uid);
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
         const batch = writeBatch(firestore);
 
-        // Use `set` with `merge: true` to safely create/update the document.
-        // This avoids errors if the document doesn't exist yet (a race condition on first login).
-        batch.set(userRef, { bullCoinBalance: increment(bcEarned) }, { merge: true });
+        // We can now safely use updateDoc via the batch, as we've confirmed the doc exists.
+        batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
         
         batch.set(transactionRef, {
              userId: user.uid,
@@ -119,7 +119,7 @@ export function MainDashboard() {
     }
 
     prevStepsRef.current = newSteps;
-  }, [steps, user, firestore, toast, profileLoading]);
+  }, [steps, user, firestore, toast, profileLoading, userProfile]);
 
   // Fetch exchange rate on mount
   useEffect(() => {
