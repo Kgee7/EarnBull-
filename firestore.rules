@@ -6,8 +6,7 @@
  *
  * Data Structure: The entire data model is hierarchical, rooted at the top-level `/users` collection.
  * Each user's data is stored under `/users/{userId}`, where `{userId}` is the user's unique
- * authentication ID. All related data, such as `transactions`, `withdrawalRequests`, and
- * `dailyStepCounts`, are stored in subcollections under this path.
+ * authentication ID. All related data, such as `transactions` and `withdrawalRequests` are stored in subcollections under this path.
  *
  * Key Security Decisions:
  * - Deny-All Default: Access is implicitly denied unless explicitly granted by a rule.
@@ -73,14 +72,6 @@ service cloud.firestore {
     }
 
     /**
-     * Validates a user profile on update.
-     * Ensures the user owns the existing document and that the `id` field remains unchanged.
-     */
-    function isUpdatingValidUserProfile(userId) {
-      return isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-    }
-
-    /**
      * Validates subcollection documents (transactions, requests, etc.) on creation.
      * Ensures the owner is creating the document and that the internal `userId` field
      * matches the path, establishing a permanent ownership link.
@@ -91,10 +82,10 @@ service cloud.firestore {
 
     /**
      * Validates subcollection documents on update.
-     * Ensures the owner is updating the document and that the `userId` field is immutable.
+     * Allows partial updates by ensuring that if the `userId` field is present, it is not changed.
      */
     function isUpdatingValidSubcollectionDoc(userId) {
-      return isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      return isExistingOwner(userId) && (!('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId);
     }
 
     /**
@@ -116,7 +107,7 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow list: if false; // Explicitly deny listing the /users collection for privacy.
       allow create: if isCreatingValidUserProfile(userId);
-      allow update: if isUpdatingValidUserProfile(userId);
+      allow update: if isExistingOwner(userId); // Allow user to update their own profile.
       allow delete: if false; // Deleting a user profile is a sensitive, destructive action. Disable by default.
 
       /**
@@ -141,20 +132,6 @@ service cloud.firestore {
        * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
        */
       match /withdrawalRequests/{requestId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isCreatingValidSubcollectionDoc(userId);
-        allow update: if isUpdatingValidSubcollectionDoc(userId);
-        allow delete: if isExistingOwner(userId);
-      }
-
-      /**
-       * @description A user can manage their own daily step count records.
-       * @path /users/{userId}/dailyStepCounts/{stepCountId}
-       * @allow (delete) User 'user_abc' deletes one of their own step count records.
-       * @deny (update) User 'user_xyz' tries to modify a step count record for user 'user_abc'.
-       * @principle Restricts access to a user's own data tree and validates relational integrity on writes.
-       */
-      match /dailyStepCounts/{stepCountId} {
         allow get, list: if isOwner(userId);
         allow create: if isCreatingValidSubcollectionDoc(userId);
         allow update: if isUpdatingValidSubcollectionDoc(userId);

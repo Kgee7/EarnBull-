@@ -175,37 +175,6 @@
         "momoNumber",
         "status"
       ]
-    },
-    "DailyStepCount": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "DailyStepCount",
-      "type": "object",
-      "description": "Stores the daily step count for a user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the daily step count record."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N DailyStepCount)"
-        },
-        "date": {
-          "type": "string",
-          "description": "The date for which the step count is recorded (YYYY-MM-DD).",
-          "format": "date"
-        },
-        "stepCount": {
-          "type": "number",
-          "description": "The number of steps taken on the given date."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "date",
-        "stepCount"
-      ]
     }
   },
   "auth": {
@@ -271,30 +240,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/dailyStepCounts/{stepCountId}",
-        "definition": {
-          "entityName": "DailyStepCount",
-          "schema": {
-            "$ref": "#/backend/entities/DailyStepCount"
-          },
-          "description": "Stores daily step count data for each user.  The `userId` ensures that only the user can access their step count data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user, matching the user profile ID."
-            },
-            {
-              "name": "stepCountId",
-              "description": "The unique identifier for the daily step count record."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure secure and scalable data management for the EarnBull application. It prioritizes authorization independence and clear security rules. User profiles and associated data (BullCoin transactions, withdrawal requests, and daily step counts) are organized under the `/users/{userId}` path to enforce ownership. This design eliminates the need for complex `get()` calls in security rules and guarantees data integrity. Specifically, the denormalization strategy is applied to any collaborative data if the application is expanded in the future to support such a feature. By structuring the data this way, we ensure that access control is straightforward and efficient, supporting the required QAPs by securely scoping data to individual users. The segregation of user-specific data into separate subcollections ensures that list operations are secure, as rules can be applied at the collection level without needing to filter based on document content."
+    "reasoning": "The Firestore structure is designed to ensure secure and scalable data management for the EarnBull application. It prioritizes authorization independence and clear security rules. User profiles and associated data (BullCoin transactions, withdrawal requests) are organized under the `/users/{userId}` path to enforce ownership. This design eliminates the need for complex `get()` calls in security rules and guarantees data integrity. Specifically, the denormalization strategy is applied to any collaborative data if the application is expanded in the future to support such a feature. By structuring the data this way, we ensure that access control is straightforward and efficient, supporting the required QAPs by securely scoping data to individual users. The segregation of user-specific data into separate subcollections ensures that list operations are secure, as rules can be applied at the collection level without needing to filter based on document content."
   }
 }
-
-    

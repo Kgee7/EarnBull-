@@ -6,11 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Footprints, Wallet, CircleDollarSign, CircleUser } from 'lucide-react';
-import type { User } from 'firebase/auth';
+import { Footprints, Wallet, CircleDollarSign } from 'lucide-react';
 
 interface StatCardsProps {
-  user: User | null;
   steps: number;
   bullCoins: number;
   usdBalance: number;
@@ -20,19 +18,12 @@ interface StatCardsProps {
 const GhanianCediIcon = () => <span className="font-bold">₵</span>;
 
 export function StatCards({
-  user,
   steps,
   bullCoins,
   usdBalance,
   ghsBalance,
 }: StatCardsProps) {
-  const stats = [
-    {
-      title: `Welcome, ${user?.displayName?.split(' ')[0] || 'User'}!`,
-      value: "Let's get moving",
-      icon: <CircleUser className="h-4 w-4 text-muted-foreground" />,
-      description: 'Your daily progress',
-    },
+  const otherStats = [
     {
       title: 'Steps Today',
       value: steps.toLocaleString(),
@@ -55,7 +46,7 @@ export function StatCards({
 
   return (
     <>
-      {stats.map((stat) => (
+      {otherStats.map((stat) => (
         <Card key={stat.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
