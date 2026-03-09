@@ -23,8 +23,6 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
-  addDoc,
-  setDoc,
 } from 'firebase/firestore';
 
 // Constants
@@ -76,7 +74,7 @@ export function MainDashboard() {
     const previousSteps = steps;
     setSteps(newSteps);
 
-    if (!user || !firestore) return;
+    if (!user || !firestore || !userProfile) return;
 
     const previous1kMilestone = Math.floor(previousSteps / 1000);
     const new1kMilestone = Math.floor(newSteps / 1000);
@@ -88,9 +86,8 @@ export function MainDashboard() {
     try {
       const batch = writeBatch(firestore);
 
-      // Use set with merge: true to ensure it works for both new and existing users
-      // even if the doc was just created or is still being initialized.
-      batch.set(userRef, { bullCoinBalance: increment(bcEarned) }, { merge: true });
+      // Since we guarantee the profile exists on login, updateDoc is safe and explicit.
+      batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
 
       const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
       const newTransaction: Omit<Transaction, 'id'> = {
@@ -99,15 +96,15 @@ export function MainDashboard() {
         amount: bcEarned,
         currency: 'BC',
         date: new Date().toISOString(),
-        description: `Reward for step milestone`,
+        description: `Reward for reaching ${newSteps.toLocaleString()} steps milestone`,
       };
       batch.set(transactionRef, newTransaction);
       
       await batch.commit();
 
       toast({
-        title: bcEarned > 0 ? 'Coins Earned!' : 'Coins Reclaimed',
-        description: bcEarned > 0 ? `You earned ${bcEarned} Bull Coins.` : `${-bcEarned} Bull Coins were reclaimed.`,
+        title: bcEarned > 0 ? 'Coins Earned!' : 'Coins Adjusted',
+        description: bcEarned > 0 ? `You earned ${bcEarned} Bull Coins.` : `${Math.abs(bcEarned)} Bull Coins adjusted.`,
       });
 
     } catch (e: any) {
@@ -116,14 +113,14 @@ export function MainDashboard() {
       
       toast({
         title: "Update Failed",
-        description: "Could not convert steps to coins.",
+        description: "Could not sync coin balance.",
         variant: "destructive",
       });
 
       if (e.code === 'permission-denied') {
         const permissionError = new FirestorePermissionError({
           path: userRef.path,
-          operation: 'write',
+          operation: 'update',
           requestResourceData: { bullCoinBalance: `increment(${bcEarned})` },
         });
         errorEmitter.emit('permission-error', permissionError);
@@ -174,7 +171,7 @@ export function MainDashboard() {
         amount: -bcAmount,
         currency: 'BC',
         date: new Date().toISOString(),
-        description: `Converted to $${usdEarned.toFixed(2)} USD`,
+        description: `Converted ${bcAmount} BC to $${usdEarned.toFixed(2)} USD`,
       });
       await batch.commit();
       toast({ title: 'Success', description: `Converted ${bcAmount} BC to $${usdEarned.toFixed(2)} USD.` });
@@ -200,7 +197,7 @@ export function MainDashboard() {
         amount: -usdAmount,
         currency: 'USD',
         date: new Date().toISOString(),
-        description: `Converted to GHS ${ghsAmount.toFixed(2)}`,
+        description: `Converted $${usdAmount.toFixed(2)} to GHS ${ghsAmount.toFixed(2)}`,
       });
       await batch.commit();
       toast({ title: 'Success', description: `Converted $${usdAmount.toFixed(2)} to GHS ${ghsAmount.toFixed(2)}.` });

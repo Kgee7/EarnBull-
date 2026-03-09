@@ -11,12 +11,10 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 
-// This new function runs in the background to create the user document if it doesn't exist.
-// It is NOT awaited by the main sign-in flow to avoid blocking the UI.
+// Ensures the user document exists in Firestore.
 async function manageUserDocument(user: User, db: Firestore) {
   const userRef = doc(db, 'users', user.uid);
   
-  // Define userData here, so it's available in the catch block if getDoc fails.
   const { uid, displayName, email } = user;
   const userData = {
     id: uid,
@@ -37,19 +35,17 @@ async function manageUserDocument(user: User, db: Firestore) {
   try {
     const userSnap = await getDoc(userRef);
 
-    if (!userSnap.exists()) {
-      // This setDoc operation might fail due to permissions, and the error will be caught below.
-      await setDoc(userRef, userData, { merge: true });
-    }
+    // If it doesn't exist, create it. If it does, we can optionally update non-balance fields.
+    // Using merge: true is safe for both new and existing users.
+    await setDoc(userRef, userData, { merge: true });
   } catch (e: any) {
-      // This will catch permission errors from either getDoc or setDoc.
-      // We create a detailed error and emit it globally, where FirebaseErrorListener will catch it.
       const permissionError = new FirestorePermissionError({
         path: userRef.path,
-        operation: 'write', // 'write' is a safe generic operation for this create/check flow.
+        operation: 'write',
         requestResourceData: userData,
       });
       errorEmitter.emit('permission-error', permissionError);
+      throw e; // Rethrow to ensure the login flow knows it failed
   }
 }
 
@@ -57,29 +53,20 @@ async function manageUserDocument(user: User, db: Firestore) {
 export async function signInWithGoogle(auth: Auth): Promise<User | null> {
   const provider = new GoogleAuthProvider();
   try {
-    // 1. Await the sign-in popup
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
     const db = getFirestore(auth.app);
 
-    // 2. IMPORTANT: Await the document management.
-    // This ensures the user profile document exists before any other app logic runs.
-    // It prevents race conditions on the dashboard. This adds a slight, one-time
-    // delay for new users, but guarantees data integrity.
+    // CRITICAL: We await this to ensure the dashboard has a profile to read/update.
     await manageUserDocument(user, db);
     
-    // 3. Return the user to signal success to the caller
     return user;
-
   } catch (error: any) {
     if (error.code === 'auth/popup-closed-by-user') {
-      // This is not an application error. The user simply closed the login popup.
       console.log("Sign-in popup closed by user.");
     } else {
-      // For any other unexpected error, log it.
       console.error('Error during Google sign-in:', error);
     }
-    // Return null to signal failure to the caller
     return null;
   }
 }

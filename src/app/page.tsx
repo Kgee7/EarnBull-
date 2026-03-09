@@ -54,7 +54,8 @@ export default function LoginPage() {
       setIsSigningIn(true);
       const loggedInUser = await signInWithGoogle(auth);
       if (loggedInUser) {
-        // Redirect is handled by the useEffect
+        // Redirect is handled by the useEffect or directly by router.push
+        router.push('/dashboard');
       } else {
         setIsSigningIn(false);
       }
