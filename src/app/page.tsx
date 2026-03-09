@@ -43,7 +43,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // This effect handles the case where a user is already logged in when visiting the page.
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
@@ -55,15 +54,13 @@ export default function LoginPage() {
       setIsSigningIn(true);
       const loggedInUser = await signInWithGoogle(auth);
       if (loggedInUser) {
-        // The page will redirect as soon as the `user` state propagates from the useEffect hook.
+        // Redirect is handled by the useEffect
       } else {
-        // If sign-in fails or is cancelled, stop the loading indicator.
         setIsSigningIn(false);
       }
     }
   };
 
-  // Show a skeleton if the auth state is loading, if we're actively signing in, or if a user object exists (and we're about to redirect).
   if (isUserLoading || isSigningIn || user) {
     return <LoginSkeleton />;
   }
