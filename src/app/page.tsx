@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -43,7 +44,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // Handle the redirect result when the page loads
   useEffect(() => {
     if (auth) {
         handleRedirectResult(auth).then((loggedInUser) => {
@@ -54,7 +54,6 @@ export default function LoginPage() {
     }
   }, [auth, router]);
 
-  // If already logged in, go to dashboard
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
@@ -65,7 +64,6 @@ export default function LoginPage() {
     if (auth) {
       setIsSigningIn(true);
       await signInWithGoogle(auth);
-      // Redirect happens here, page will reload on return
     }
   };
 

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react";
@@ -23,7 +24,6 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
     const canWithdraw = isEligible && ghsBalance > 0;
 
     const handleWithdraw = async () => {
-        // Convert string input to a strict number to avoid 'null' in JSON serialization
         const amountValue = parseFloat(withdrawAmount);
         
         if (isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance || !momoNumber) {
@@ -40,7 +40,6 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
     }
 
     const amountValue = parseFloat(withdrawAmount);
-    // Button validation: Must be a valid number, > 0, and <= balance
     const isInvalidAmount = withdrawAmount === "" || isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance;
 
     return (

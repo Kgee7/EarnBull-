@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,7 +26,6 @@ import {
   getDocs,
 } from 'firebase/firestore';
 
-// Constants
 const BC_PER_1000_STEPS = 10;
 const USD_PER_10_BC = 0.15;
 const MIN_WITHDRAWAL_USD = 1;
@@ -85,8 +85,6 @@ export function MainDashboard() {
     const userRef = doc(firestore, 'users', user.uid);
     try {
       const batch = writeBatch(firestore);
-
-      // Since we guarantee the profile exists on login, updateDoc is safe and explicit.
       batch.update(userRef, { bullCoinBalance: increment(bcEarned) });
 
       const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
@@ -108,9 +106,7 @@ export function MainDashboard() {
       });
 
     } catch (e: any) {
-      console.error("Error during step-to-coin conversion:", e);
       setSteps(previousSteps);
-      
       toast({
         title: "Update Failed",
         description: "Could not sync coin balance.",
@@ -154,7 +150,7 @@ export function MainDashboard() {
   };
 
   const handleConvertToUsd = async (bcAmount: number) => {
-    if (!user || !firestore || !userProfile) return;
+    if (!user || !firestore || !userProfile || isNaN(bcAmount)) return;
     const usdEarned = (bcAmount / 10) * USD_PER_10_BC;
     const userRef = doc(firestore, 'users', user.uid);
 
@@ -181,7 +177,7 @@ export function MainDashboard() {
   };
 
   const handleConvertToGhs = async (usdAmount: number) => {
-    if (!exchangeRate || !user || !firestore) return;
+    if (!exchangeRate || !user || !firestore || isNaN(usdAmount)) return;
     const ghsAmount = usdAmount * exchangeRate;
     const userRef = doc(firestore, 'users', user.uid);
     try {
@@ -207,7 +203,10 @@ export function MainDashboard() {
   };
 
   const handleWithdraw = async (ghsAmount: number, momoNumber: string) => {
-    if (!user || !firestore || !exchangeRate) return;
+    if (!user || !firestore || !exchangeRate || !Number.isFinite(ghsAmount)) {
+        toast({ title: "Invalid Amount", variant: "destructive" });
+        return;
+    }
     setIsWithdrawing(true);
     try {
       const result = await processMomoWithdrawal({
