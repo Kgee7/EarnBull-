@@ -26,7 +26,13 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
         href="/dashboard"
         className="flex items-center gap-2 text-lg font-semibold"
       >
-        <img src="/logo.png" alt="EarnBull Logo" width="32" height="32" />
+        <img 
+          src="/logo.png" 
+          alt="EarnBull Logo" 
+          width="40" 
+          height="40" 
+          className="rounded-[10px]"
+        />
       </Link>
       <div className="flex items-center gap-4">
         <DropdownMenu>
@@ -57,7 +63,7 @@ function DashboardSkeleton() {
     <div className="flex min-h-screen w-full flex-col">
        <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 z-50">
         <div className="flex items-center gap-2 px-4">
-          <Skeleton className="h-8 w-8" />
+          <Skeleton className="h-10 w-10 rounded-[10px]" />
         </div>
         <div className="flex items-center gap-4 px-4">
           <Skeleton className="h-8 w-8 rounded-full" />

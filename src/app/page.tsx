@@ -15,7 +15,7 @@ function LoginSkeleton() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex justify-center">
-            <Skeleton className="h-20 w-20 rounded-full" />
+            <Skeleton className="h-24 w-24 rounded-[20px]" />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
@@ -54,7 +54,6 @@ export default function LoginPage() {
       setIsSigningIn(true);
       const loggedInUser = await signInWithGoogle(auth);
       if (loggedInUser) {
-        // Redirect is handled by the useEffect or directly by router.push
         router.push('/dashboard');
       } else {
         setIsSigningIn(false);
@@ -71,7 +70,13 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex justify-center">
-             <img src="/logo.png" alt="EarnBull Logo" width="80" height="80" />
+             <img 
+               src="/logo.png" 
+               alt="EarnBull Logo" 
+               width="100" 
+               height="100" 
+               className="rounded-[20px] shadow-sm"
+             />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
             EarnBull
