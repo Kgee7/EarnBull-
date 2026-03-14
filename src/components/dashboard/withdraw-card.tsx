@@ -62,7 +62,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         placeholder="0.00" 
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
-                        disabled={!canWithdraw || isWithdrawing}
+                        disabled={isWithdrawing}
                     />
                     <p className="text-xs text-muted-foreground">Available for withdrawal: GHS {ghsBalance.toFixed(2)}</p>
                 </div>
@@ -74,7 +74,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         placeholder="024XXXXXXX"
                         value={momoNumber}
                         onChange={e => setMomoNumber(e.target.value)}
-                        disabled={!canWithdraw || isWithdrawing}
+                        disabled={isWithdrawing}
                     />
                 </div>
             </CardContent>
