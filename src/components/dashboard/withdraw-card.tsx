@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react";
@@ -26,7 +25,6 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
     const handleWithdraw = async () => {
         const amount = parseFloat(withdrawAmount);
         
-        // Validate number to prevent NaN/null errors in server action
         if (isNaN(amount) || amount <= 0 || amount > ghsBalance || !momoNumber) {
             return;
         }
@@ -34,8 +32,9 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
         try {
             await onWithdraw(amount, momoNumber);
             setWithdrawAmount("");
+            setMomoNumber("");
         } catch (error) {
-            // Keep input on error so user can correct it
+            // Error handling is managed in main-dashboard via toast
         }
     }
 
@@ -43,7 +42,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
     const isInvalidAmount = isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance;
 
     return (
-        <Card className={!isEligible ? 'bg-muted/50' : ''}>
+        <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Withdraw Funds</CardTitle>
                 <CardDescription>

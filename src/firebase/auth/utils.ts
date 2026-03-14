@@ -1,7 +1,8 @@
 'use client';
 import {
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   type Auth,
   signOut as firebaseSignOut,
   type User,
@@ -50,25 +51,27 @@ async function manageUserDocument(user: User, db: Firestore) {
 }
 
 
-export async function signInWithGoogle(auth: Auth): Promise<User | null> {
+export async function signInWithGoogle(auth: Auth): Promise<void> {
   const provider = new GoogleAuthProvider();
   try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const db = getFirestore(auth.app);
-
-    // CRITICAL: We await this to ensure the dashboard has a profile to read/update.
-    await manageUserDocument(user, db);
-    
-    return user;
+    await signInWithRedirect(auth, provider);
   } catch (error: any) {
-    if (error.code === 'auth/popup-closed-by-user') {
-      console.log("Sign-in popup closed by user.");
-    } else {
-      console.error('Error during Google sign-in:', error);
+    console.error('Error during Google sign-in redirect:', error);
+  }
+}
+
+export async function handleRedirectResult(auth: Auth): Promise<User | null> {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            const db = getFirestore(auth.app);
+            await manageUserDocument(result.user, db);
+            return result.user;
+        }
+    } catch (error: any) {
+        console.error('Error handling redirect result:', error);
     }
     return null;
-  }
 }
 
 export async function signOut(auth: Auth) {

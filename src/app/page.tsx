@@ -6,7 +6,7 @@ import { GoogleIcon } from '@/components/icons/google-icon';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { signInWithGoogle } from '@/firebase/auth/utils';
+import { signInWithGoogle, handleRedirectResult } from '@/firebase/auth/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function LoginSkeleton() {
@@ -44,6 +44,16 @@ export default function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
+    if (auth) {
+        handleRedirectResult(auth).then((loggedInUser) => {
+            if (loggedInUser) {
+                router.push('/dashboard');
+            }
+        });
+    }
+  }, [auth, router]);
+
+  useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
     }
@@ -52,12 +62,8 @@ export default function LoginPage() {
   const handleSignIn = async () => {
     if (auth) {
       setIsSigningIn(true);
-      const loggedInUser = await signInWithGoogle(auth);
-      if (loggedInUser) {
-        router.push('/dashboard');
-      } else {
-        setIsSigningIn(false);
-      }
+      await signInWithGoogle(auth);
+      // The page will redirect, so no need for further logic here.
     }
   };
 
@@ -75,7 +81,8 @@ export default function LoginPage() {
                alt="EarnBull Logo" 
                width="100" 
                height="100" 
-               className="rounded-[20px] shadow-sm"
+               style={{ borderRadius: '20px' }}
+               className="shadow-sm"
              />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
