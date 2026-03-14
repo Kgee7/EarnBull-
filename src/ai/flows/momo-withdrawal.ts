@@ -1,6 +1,7 @@
+
 'use server';
 /**
- * @fileOverview A flow to handle real-money withdrawals via MTN Mobile Money.
+ * @fileOverview A flow to handle real-money withdrawals via MTN Mobile Money Sandbox API.
  *
  * - processMomoWithdrawal - A server-side function to securely process a withdrawal request.
  * - MomoWithdrawalInput - The input type for the processMomoWithdrawal function.
@@ -9,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { crypto } from 'crypto';
 
 const MomoWithdrawalInputSchema = z.object({
   amount: z.number().describe('The amount of GHS to withdraw.'),
@@ -24,6 +26,29 @@ const MomoWithdrawalOutputSchema = z.object({
 });
 export type MomoWithdrawalOutput = z.infer<typeof MomoWithdrawalOutputSchema>;
 
+/**
+ * Helper to get a Sandbox Access Token from MTN
+ */
+async function getMomoAccessToken(apiUserId: string, apiKey: string, subscriptionKey: string) {
+  const auth = Buffer.from(`${apiUserId}:${apiKey}`).toString('base64');
+  
+  const response = await fetch('https://sandbox.momodeveloper.mtn.com/disbursement/token/', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Ocp-Apim-Subscription-Key': subscriptionKey,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to get MTN Access Token: ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
 export async function processMomoWithdrawal(input: MomoWithdrawalInput): Promise<MomoWithdrawalOutput> {
   return momoWithdrawalFlow(input);
 }
@@ -35,50 +60,69 @@ const momoWithdrawalFlow = ai.defineFlow(
     outputSchema: MomoWithdrawalOutputSchema,
   },
   async (input) => {
-    console.log('Attempting MoMo withdrawal with input:', input);
+    const { amount, momoNumber } = input;
 
-    const { amount, momoNumber, transactionId } = input;
-
-    // IMPORTANT: These API keys must be set in your .env file.
     const apiUserId = process.env.MTN_API_USER_ID;
     const apiKey = process.env.MTN_API_KEY;
     const subscriptionKey = process.env.MTN_SUBSCRIPTION_KEY;
 
-    if (!apiUserId || !apiKey || !subscriptionKey) {
-      console.error('MTN API credentials are not configured in .env file.');
+    if (!apiUserId || !apiKey || !subscriptionKey || subscriptionKey.includes('PASTE_YOUR')) {
       return {
         success: false,
-        message: 'Server configuration error: API credentials for payment provider are missing.',
+        message: 'Server configuration error: MTN API credentials or Subscription Key are missing in .env.',
       };
     }
 
-    // =================================================================================
-    // THIS IS A MOCK API CALL.
-    // You will need to replace this with the actual API call to the MTN Disbursement API.
-    // This will involve using `fetch` to POST to the correct MTN endpoint with the
-    // required headers (like Ocp-Apim-Subscription-Key) and body payload.
-    // You will also need to handle authentication (e.g., getting an access token).
-    // =================================================================================
-    
-    console.log('Simulating API call to MTN Mobile Money...');
-    
-    // Mocking a successful API response after a short delay.
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const mockApiSuccess = true; // Change to `false` to test failure scenarios.
-    
-    if (mockApiSuccess) {
-      console.log('Mock API call successful.');
-      return {
-        success: true,
-        message: `Successfully processed withdrawal of GHS ${amount} to ${momoNumber}.`,
-        providerTransactionId: `MOCK_TX_${Date.now()}`,
+    try {
+      // 1. Get Access Token
+      const accessToken = await getMomoAccessToken(apiUserId, apiKey, subscriptionKey);
+
+      // 2. Initiate Transfer (Disbursement)
+      // MTN Sandbox requires a UUID for X-Reference-Id
+      const referenceId = crypto.randomUUID();
+
+      const transferBody = {
+        amount: amount.toString(),
+        currency: "EUR", // Note: Sandbox often only supports EUR for testing, or GHS if configured
+        externalId: input.transactionId,
+        payee: {
+          partyIdType: "MSISDN",
+          partyId: momoNumber.startsWith('233') ? momoNumber : `233${momoNumber.replace(/^0/, '')}`
+        },
+        payerMessage: "EarnBull Withdrawal",
+        payeeNote: "Transfer from EarnBull wallet"
       };
-    } else {
-      console.log('Mock API call failed.');
+
+      const transferResponse = await fetch('https://sandbox.momodeveloper.mtn.com/disbursement/v1_0/transfer', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Reference-Id': referenceId,
+          'X-Target-Environment': 'sandbox',
+          'Content-Type': 'application/json',
+          'Ocp-Apim-Subscription-Key': subscriptionKey,
+        },
+        body: JSON.stringify(transferBody),
+      });
+
+      if (transferResponse.status === 202) {
+        return {
+          success: true,
+          message: `Withdrawal request for GHS ${amount} accepted and is being processed.`,
+          providerTransactionId: referenceId,
+        };
+      } else {
+        const errorData = await transferResponse.text();
+        return {
+          success: false,
+          message: `MTN API returned an error: ${errorData || transferResponse.statusText}`,
+        };
+      }
+    } catch (error: any) {
+      console.error('MoMo Withdrawal Error:', error);
       return {
         success: false,
-        message: 'The payment provider declined the transaction.',
+        message: `An unexpected error occurred: ${error.message}`,
       };
     }
   }
