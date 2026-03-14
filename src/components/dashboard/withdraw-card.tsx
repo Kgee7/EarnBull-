@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react";
@@ -11,7 +12,7 @@ interface WithdrawCardProps {
     ghsBalance: number;
     usdBalance: number;
     minWithdrawalUsd: number;
-    onWithdraw: (ghsAmount: number, momoNumber: string) => void;
+    onWithdraw: (ghsAmount: number, momoNumber: string) => Promise<void>;
     isWithdrawing: boolean;
 }
 
@@ -22,10 +23,24 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
     const isEligible = usdBalance >= minWithdrawalUsd;
     const canWithdraw = isEligible && ghsBalance > 0;
 
-    const handleWithdraw = () => {
-        onWithdraw(parseFloat(withdrawAmount), momoNumber);
-        setWithdrawAmount("");
+    const handleWithdraw = async () => {
+        const amount = parseFloat(withdrawAmount);
+        
+        // Validate number to prevent NaN/null errors in server action
+        if (isNaN(amount) || amount <= 0 || amount > ghsBalance || !momoNumber) {
+            return;
+        }
+
+        try {
+            await onWithdraw(amount, momoNumber);
+            setWithdrawAmount("");
+        } catch (error) {
+            // Keep input on error so user can correct it
+        }
     }
+
+    const amountValue = parseFloat(withdrawAmount);
+    const isInvalidAmount = isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance;
 
     return (
         <Card className={!isEligible ? 'bg-muted/50' : ''}>
@@ -67,10 +82,10 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                  <Button 
                     className="w-full"
                     onClick={handleWithdraw}
-                    disabled={!canWithdraw || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > ghsBalance || !momoNumber || isWithdrawing}
+                    disabled={!canWithdraw || isInvalidAmount || !momoNumber || isWithdrawing}
                 >
                     {isWithdrawing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isWithdrawing ? 'Processing...' : `Withdraw GHS ${parseFloat(withdrawAmount) > 0 ? parseFloat(withdrawAmount).toFixed(2) : ''}`}
+                    {isWithdrawing ? 'Processing...' : `Withdraw GHS ${!isNaN(amountValue) && amountValue > 0 ? amountValue.toFixed(2) : ''}`}
                 </Button>
             </CardFooter>
         </Card>

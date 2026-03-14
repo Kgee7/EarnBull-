@@ -42,7 +42,7 @@ async function getMomoAccessToken(apiUserId: string, apiKey: string, subscriptio
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to get MTN Access Token: ${errorText}`);
+    throw new Error(`MTN Auth Error: ${errorText || response.statusText}`);
   }
 
   const data = await response.json();
@@ -69,21 +69,17 @@ const momoWithdrawalFlow = ai.defineFlow(
     if (!apiUserId || !apiKey || !subscriptionKey || subscriptionKey.includes('PASTE_YOUR')) {
       return {
         success: false,
-        message: 'Server configuration error: MTN API credentials or Subscription Key are missing in .env.',
+        message: 'Withdrawal failed: MTN API credentials or Subscription Key are missing or invalid in .env.',
       };
     }
 
     try {
-      // 1. Get Access Token
       const accessToken = await getMomoAccessToken(apiUserId, apiKey, subscriptionKey);
-
-      // 2. Initiate Transfer (Disbursement)
-      // MTN Sandbox requires a UUID for X-Reference-Id
       const referenceId = crypto.randomUUID();
 
       const transferBody = {
         amount: amount.toString(),
-        currency: "EUR", // Note: Sandbox often only supports EUR for testing, or GHS if configured
+        currency: "EUR", 
         externalId: input.transactionId,
         payee: {
           partyIdType: "MSISDN",
@@ -108,21 +104,20 @@ const momoWithdrawalFlow = ai.defineFlow(
       if (transferResponse.status === 202) {
         return {
           success: true,
-          message: `Withdrawal request for GHS ${amount} accepted and is being processed.`,
+          message: `Withdrawal of GHS ${amount} initiated successfully.`,
           providerTransactionId: referenceId,
         };
       } else {
         const errorData = await transferResponse.text();
         return {
           success: false,
-          message: `MTN API returned an error: ${errorData || transferResponse.statusText}`,
+          message: `MTN Transfer Error: ${errorData || transferResponse.statusText}`,
         };
       }
     } catch (error: any) {
-      console.error('MoMo Withdrawal Error:', error);
       return {
         success: false,
-        message: `An unexpected error occurred: ${error.message}`,
+        message: error.message || 'An unexpected error occurred during withdrawal.',
       };
     }
   }
