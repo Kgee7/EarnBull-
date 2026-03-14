@@ -43,6 +43,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
+  // Handle the redirect result when the page loads
   useEffect(() => {
     if (auth) {
         handleRedirectResult(auth).then((loggedInUser) => {
@@ -53,6 +54,7 @@ export default function LoginPage() {
     }
   }, [auth, router]);
 
+  // If already logged in, go to dashboard
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
@@ -63,7 +65,7 @@ export default function LoginPage() {
     if (auth) {
       setIsSigningIn(true);
       await signInWithGoogle(auth);
-      // The page will redirect, so no need for further logic here.
+      // Redirect happens here, page will reload on return
     }
   };
 
@@ -82,7 +84,7 @@ export default function LoginPage() {
                width="100" 
                height="100" 
                style={{ borderRadius: '20px' }}
-               className="shadow-sm"
+               className="shadow-sm object-cover"
              />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">

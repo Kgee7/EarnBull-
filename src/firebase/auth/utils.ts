@@ -11,7 +11,6 @@ import { doc, setDoc, getFirestore, getDoc, type Firestore } from 'firebase/fire
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-
 // Ensures the user document exists in Firestore.
 async function manageUserDocument(user: User, db: Firestore) {
   const userRef = doc(db, 'users', user.uid);
@@ -35,9 +34,7 @@ async function manageUserDocument(user: User, db: Firestore) {
 
   try {
     const userSnap = await getDoc(userRef);
-
-    // If it doesn't exist, create it. If it does, we can optionally update non-balance fields.
-    // Using merge: true is safe for both new and existing users.
+    // Using merge: true ensures we don't overwrite existing balances for old users
     await setDoc(userRef, userData, { merge: true });
   } catch (e: any) {
       const permissionError = new FirestorePermissionError({
@@ -46,14 +43,18 @@ async function manageUserDocument(user: User, db: Firestore) {
         requestResourceData: userData,
       });
       errorEmitter.emit('permission-error', permissionError);
-      throw e; // Rethrow to ensure the login flow knows it failed
+      throw e;
   }
 }
 
-
 export async function signInWithGoogle(auth: Auth): Promise<void> {
   const provider = new GoogleAuthProvider();
+  // Adding specific scopes can sometimes help with permission issues
+  provider.addScope('profile');
+  provider.addScope('email');
+  
   try {
+    // Redirect is more robust than popup for many browser environments
     await signInWithRedirect(auth, provider);
   } catch (error: any) {
     console.error('Error during Google sign-in redirect:', error);

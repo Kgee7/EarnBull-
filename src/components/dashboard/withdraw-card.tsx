@@ -23,23 +23,25 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
     const canWithdraw = isEligible && ghsBalance > 0;
 
     const handleWithdraw = async () => {
-        const amount = parseFloat(withdrawAmount);
+        // Convert string input to a strict number to avoid 'null' in JSON serialization
+        const amountValue = parseFloat(withdrawAmount);
         
-        if (isNaN(amount) || amount <= 0 || amount > ghsBalance || !momoNumber) {
+        if (isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance || !momoNumber) {
             return;
         }
 
         try {
-            await onWithdraw(amount, momoNumber);
+            await onWithdraw(amountValue, momoNumber);
             setWithdrawAmount("");
             setMomoNumber("");
         } catch (error) {
-            // Error handling is managed in main-dashboard via toast
+            // Error handling is managed in parent via toast
         }
     }
 
     const amountValue = parseFloat(withdrawAmount);
-    const isInvalidAmount = isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance;
+    // Button validation: Must be a valid number, > 0, and <= balance
+    const isInvalidAmount = withdrawAmount === "" || isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance;
 
     return (
         <Card>
@@ -62,6 +64,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
                         disabled={isWithdrawing}
+                        className="bg-background"
                     />
                     <p className="text-xs text-muted-foreground">Available for withdrawal: GHS {ghsBalance.toFixed(2)}</p>
                 </div>
@@ -74,6 +77,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         value={momoNumber}
                         onChange={e => setMomoNumber(e.target.value)}
                         disabled={isWithdrawing}
+                        className="bg-background"
                     />
                 </div>
             </CardContent>
