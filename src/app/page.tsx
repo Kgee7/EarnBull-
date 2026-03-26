@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { signInWithGoogle, handleRedirectResult } from '@/firebase/auth/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Info } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 function LoginSkeleton() {
   return (
@@ -107,20 +107,6 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <Alert className="bg-primary/5 border-primary/20">
-              <Info className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-primary font-semibold">Important: Fixing 403 Error</AlertTitle>
-              <AlertDescription className="text-xs space-y-2 mt-1">
-                <p>If you see a "403 Forbidden" error after clicking sign-in:</p>
-                <ol className="list-decimal pl-4 space-y-1">
-                  <li>Go to Google Cloud Console &gt; APIs &gt; OAuth consent screen.</li>
-                  <li>Scroll to "Test users" and click "+ ADD USERS".</li>
-                  <li>Add your exact email and click **SAVE**.</li>
-                  <li>If still failing, ensure you are not signed into multiple Google accounts in this browser.</li>
-                </ol>
-              </AlertDescription>
-            </Alert>
-
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
