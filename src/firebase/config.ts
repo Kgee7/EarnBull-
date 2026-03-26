@@ -9,8 +9,12 @@
 function getFirebaseConfig() {
   let config: any = {};
 
-  // Source 1: System-provided FIREBASE_WEBAPP_CONFIG (Automatic in App Hosting)
-  const systemConfigStr = process.env.NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG || process.env.FIREBASE_WEBAPP_CONFIG;
+  // 1. Try system-provided config (most reliable in App Hosting)
+  // We check for both NEXT_PUBLIC_ and non-prefixed versions
+  const systemConfigStr = 
+    process.env.NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG || 
+    process.env.FIREBASE_WEBAPP_CONFIG;
+
   if (systemConfigStr) {
     try {
       config = JSON.parse(systemConfigStr);
@@ -19,29 +23,28 @@ function getFirebaseConfig() {
     }
   }
 
-  // Source 2: Standard Next.js client-side environment variables (for local dev)
-  if (!Object.keys(config).length) {
-    config = {
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-    };
-  }
+  // 2. Fallback to individual variables if system config is missing or incomplete
+  // Note: We handle the detected leading space typo from the environment logs (' apiKey')
+  const apiKey = 
+    config.apiKey || 
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
+    process.env[' apiKey'] || 
+    process.env.apiKey ||
+    '';
 
-  // Log the config for debugging purposes
-  console.log("Firebase Config:", config);
+  const appId = config.appId || process.env.NEXT_PUBLIC_FIREBASE_APP_ID || process.env.appId || '';
+  const authDomain = config.authDomain || process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || process.env.authDomain || '';
+  const projectId = config.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.projectId || '';
+  const storageBucket = config.storageBucket || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || process.env.storageBucket || '';
+  const messagingSenderId = config.messagingSenderId || process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || process.env.messagingSenderId || '';
 
   return {
-    apiKey: config.apiKey || '',
-    authDomain: config.authDomain || '',
-    projectId: config.projectId || '',
-    storageBucket: config.storageBucket || '',
-    messagingSenderId: config.messagingSenderId || '',
-    appId: config.appId || '',
+    apiKey,
+    authDomain,
+    projectId,
+    storageBucket,
+    messagingSenderId,
+    appId,
     measurementId: config.measurementId || '',
   };
 }
