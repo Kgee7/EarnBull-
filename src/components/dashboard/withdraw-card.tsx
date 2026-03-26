@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react";
@@ -5,35 +6,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Link from "next/link";
 
 interface WithdrawCardProps {
     ghsBalance: number;
     usdBalance: number;
     minWithdrawalUsd: number;
-    onWithdraw: (ghsAmount: number, momoNumber: string) => Promise<void>;
+    onWithdraw: (ghsAmount: number) => Promise<void>;
     isWithdrawing: boolean;
+    linkedMomoNumber: string;
 }
 
-export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing }: WithdrawCardProps) {
+export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing, linkedMomoNumber }: WithdrawCardProps) {
     const [withdrawAmount, setWithdrawAmount] = useState("");
-    const [momoNumber, setMomoNumber] = useState("");
     
     const isEligible = usdBalance >= minWithdrawalUsd;
     const amountValue = parseFloat(withdrawAmount);
     const hasSufficientBalance = !isNaN(amountValue) && amountValue > 0 && amountValue <= ghsBalance;
-    const isValidMomo = momoNumber.length >= 10;
 
     const handleWithdraw = async () => {
-        if (isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance || !isValidMomo) {
+        if (isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance) {
             return;
         }
 
         try {
-            await onWithdraw(amountValue, momoNumber);
+            await onWithdraw(amountValue);
             setWithdrawAmount("");
-            setMomoNumber("");
         } catch (error) {
             // Error handled in parent via toast
         }
@@ -44,10 +44,10 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
             <CardHeader>
                 <CardTitle className="font-headline">Withdraw Funds</CardTitle>
                 <CardDescription>
-                    Transfer GHS to your MTN MoMo account.
+                    Transfer GHS to your linked MTN MoMo account.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
                 {!isEligible && (
                     <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
                         <AlertTriangle className="h-4 w-4" />
@@ -56,6 +56,22 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         </AlertDescription>
                     </Alert>
                 )}
+
+                <div className="p-4 rounded-lg bg-secondary/50 border flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <CheckCircle2 className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium">Linked MoMo Account</p>
+                            <p className="text-xs text-muted-foreground font-mono">{linkedMomoNumber}</p>
+                        </div>
+                    </div>
+                    <Button variant="ghost" size="sm" asChild className="text-xs h-8">
+                        <Link href="/dashboard/payout">Change</Link>
+                    </Button>
+                </div>
+
                 <div className="space-y-1">
                     <Label htmlFor="ghs-withdraw">Amount (GHS)</Label>
                     <Input 
@@ -65,30 +81,22 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
                         disabled={isWithdrawing}
-                        className="bg-background focus:ring-2 focus:ring-primary"
+                        className="bg-background focus:ring-2 focus:ring-primary h-12 text-lg"
                     />
                     <p className="text-xs text-muted-foreground">Available for withdrawal: GHS {ghsBalance.toFixed(2)}</p>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="momo-number">MTN MoMo Number</Label>
-                    <Input 
-                        id="momo-number" 
-                        type="tel" 
-                        placeholder="024XXXXXXX"
-                        value={momoNumber}
-                        onChange={e => setMomoNumber(e.target.value)}
-                        disabled={isWithdrawing}
-                        className="bg-background focus:ring-2 focus:ring-primary"
-                    />
                 </div>
             </CardContent>
             <CardFooter>
                  <Button 
-                    className="w-full"
+                    className="w-full h-12 text-lg"
                     onClick={handleWithdraw}
-                    disabled={!isEligible || !hasSufficientBalance || !isValidMomo || isWithdrawing}
+                    disabled={!isEligible || !hasSufficientBalance || isWithdrawing}
                 >
-                    {isWithdrawing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isWithdrawing ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                        <ArrowRight className="mr-2 h-5 w-5" />
+                    )}
                     {isWithdrawing ? 'Processing...' : `Withdraw GHS ${hasSufficientBalance ? amountValue.toFixed(2) : ''}`}
                 </Button>
             </CardFooter>

@@ -15,8 +15,8 @@ import {
   writeBatch,
   increment,
 } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -39,6 +39,7 @@ export default function WithdrawPage() {
   
   const ghsBalance = Number(userProfile?.ghsBalance) || 0;
   const usdBalance = Number(userProfile?.usdBalance) || 0;
+  const payoutDetails = userProfile?.payoutDetails;
 
   useEffect(() => {
     async function fetchRate() {
@@ -52,10 +53,15 @@ export default function WithdrawPage() {
     fetchRate();
   }, []);
 
-  const handleWithdraw = async (ghsAmount: number, momoNumber: string) => {
+  const handleWithdraw = async (ghsAmount: number) => {
     const amountVal = Number(ghsAmount);
     if (!user || !firestore || !exchangeRate || isNaN(amountVal) || amountVal <= 0) {
         toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
+        return;
+    }
+
+    if (!payoutDetails?.momoNumber) {
+        toast({ title: "Payout Details Missing", description: "Please link your payout details first.", variant: "destructive" });
         return;
     }
     
@@ -63,7 +69,7 @@ export default function WithdrawPage() {
     try {
       const result = await processMomoWithdrawal({
         amount: amountVal,
-        momoNumber: momoNumber,
+        momoNumber: payoutDetails.momoNumber,
         transactionId: `wd-${user.uid}-${Date.now()}`,
       });
       
@@ -77,7 +83,7 @@ export default function WithdrawPage() {
         amount: -amountVal,
         currency: 'GHS',
         date: new Date().toISOString(),
-        description: `Withdrawal to ${momoNumber}`,
+        description: `Withdrawal to ${payoutDetails.momoNumber}`,
       });
       batch.set(doc(collection(firestore, 'users', user.uid, 'withdrawalRequests')), {
         userId: user.uid,
@@ -85,7 +91,7 @@ export default function WithdrawPage() {
         amountGHS: amountVal,
         amountUSD: amountVal / exchangeRate,
         exchangeRate: exchangeRate,
-        momoNumber: momoNumber,
+        momoNumber: payoutDetails.momoNumber,
         status: 'completed',
         providerTransactionId: result.providerTransactionId,
       });
@@ -116,13 +122,33 @@ export default function WithdrawPage() {
         </div>
       </div>
 
-      <WithdrawCard
-        ghsBalance={ghsBalance}
-        usdBalance={usdBalance}
-        minWithdrawalUsd={MIN_WITHDRAWAL_USD}
-        onWithdraw={handleWithdraw}
-        isWithdrawing={isWithdrawing}
-      />
+      {!payoutDetails?.momoNumber ? (
+          <Card className="border-accent bg-accent/5">
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-accent-foreground">
+                      <AlertCircle className="h-5 w-5" />
+                      Action Required
+                  </CardTitle>
+                  <CardDescription>
+                      You must link your payout details before you can make a withdrawal.
+                  </CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <Button asChild className="w-full">
+                      <Link href="/dashboard/payout">Link Payout Details Now</Link>
+                  </Button>
+              </CardContent>
+          </Card>
+      ) : (
+          <WithdrawCard
+            ghsBalance={ghsBalance}
+            usdBalance={usdBalance}
+            minWithdrawalUsd={MIN_WITHDRAWAL_USD}
+            onWithdraw={handleWithdraw}
+            isWithdrawing={isWithdrawing}
+            linkedMomoNumber={payoutDetails.momoNumber}
+          />
+      )}
       
       <Card>
         <CardHeader>
