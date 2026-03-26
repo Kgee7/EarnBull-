@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
-import { Alert, AlertDescription } from "@/Alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 
@@ -63,7 +64,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
             <CardHeader>
                 <CardTitle className="font-headline">Withdraw Funds</CardTitle>
                 <CardDescription>
-                    Transfer GHS to your linked MTN MoMo account.
+                    Transfer GHS to your linked MoMo account.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -82,7 +83,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                             <CheckCircle2 className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <p className="text-sm font-medium">Linked MoMo Account</p>
+                            <p className="text-sm font-medium">Linked Account</p>
                             <p className="text-xs text-muted-foreground font-mono">{linkedMomoNumber}</p>
                         </div>
                     </div>
