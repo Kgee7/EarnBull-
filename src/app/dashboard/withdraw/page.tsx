@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
-import { processMomoWithdrawal } from '@/ai/flows/momo-withdrawal';
+import { momoWithdrawal } from '@/ai/flows/momo-withdrawal';
 import type { Transaction, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { WithdrawCard } from '@/components/dashboard/withdraw-card';
@@ -59,21 +59,19 @@ export default function WithdrawPage() {
         return;
     }
 
-    if (!payoutDetails?.momoNumber) {
+    if (!payoutDetails?.momoNumber || !payoutDetails?.momoNetwork) {
         toast({ title: "Payout Details Missing", description: "Please link your payout details first.", variant: "destructive" });
         return;
     }
     
     setIsWithdrawing(true);
     try {
-      const result = await processMomoWithdrawal({
+      const result = await momoWithdrawal({
         amount: amountVal,
-        momoNumber: payoutDetails.momoNumber,
-        transactionId: `wd-${user.uid}-${Date.now()}`,
+        phoneNumber: payoutDetails.momoNumber,
+        network: payoutDetails.momoNetwork,
       });
       
-      if (!result.success) throw new Error(result.message);
-
       const batch = writeBatch(firestore);
       batch.update(doc(firestore, 'users', user.uid), { ghsBalance: increment(-amountVal) });
       batch.set(doc(collection(firestore, 'users', user.uid, 'transactions')), {
@@ -92,7 +90,7 @@ export default function WithdrawPage() {
         exchangeRate: exchangeRate,
         momoNumber: payoutDetails.momoNumber,
         status: 'completed',
-        providerTransactionId: result.providerTransactionId,
+        providerTransactionId: result.transactionId,
       });
       await batch.commit();
       toast({ title: 'Withdrawal Successful' });
