@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react";
@@ -63,7 +62,6 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
                         disabled={isWithdrawing}
-                        className="bg-background"
                     />
                     <p className="text-xs text-muted-foreground">Available for withdrawal: GHS {ghsBalance.toFixed(2)}</p>
                 </div>
@@ -76,7 +74,6 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         value={momoNumber}
                         onChange={e => setMomoNumber(e.target.value)}
                         disabled={isWithdrawing}
-                        className="bg-background"
                     />
                 </div>
             </CardContent>
