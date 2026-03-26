@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -105,7 +104,12 @@ export default function WithdrawPage() {
   };
 
   if (profileLoading) {
-    return <Skeleton className="h-[400px] w-full" />;
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    );
   }
 
   return (

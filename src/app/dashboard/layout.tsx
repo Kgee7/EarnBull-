@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -89,6 +88,14 @@ function Header({ user, profile }: { user: User; profile: UserProfile | null }) 
           href="/dashboard"
           className="flex items-center gap-2 text-lg font-semibold"
         >
+           <img 
+               src="/logo.png" 
+               alt="EarnBull Logo" 
+               width="32" 
+               height="32" 
+               style={{ borderRadius: '6px' }}
+               className="shadow-sm object-cover"
+             />
           <span className="hidden sm:inline font-headline text-primary">EarnBull</span>
         </Link>
       </div>
