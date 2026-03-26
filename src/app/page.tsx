@@ -94,7 +94,8 @@ export default function LoginPage() {
                alt="EarnBull Logo" 
                width="100" 
                height="100" 
-               className="shadow-sm object-cover rounded-[20px]"
+               style={{ borderRadius: '20px' }}
+               className="shadow-sm object-cover"
              />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
