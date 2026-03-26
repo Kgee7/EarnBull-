@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react";
@@ -5,40 +6,72 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Link from "next/link";
 
 interface WithdrawCardProps {
     ghsBalance: number;
     usdBalance: number;
     minWithdrawalUsd: number;
-    onWithdraw: (ghsAmount: number, momoNumber: string) => void;
+    onWithdraw: (ghsAmount: number) => Promise<void>;
     isWithdrawing: boolean;
+    linkedMomoNumber: string;
 }
 
-export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing }: WithdrawCardProps) {
+export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing, linkedMomoNumber }: WithdrawCardProps) {
     const [withdrawAmount, setWithdrawAmount] = useState("");
-    const [momoNumber, setMomoNumber] = useState("");
     
     const isEligible = usdBalance >= minWithdrawalUsd;
-    const canWithdraw = isEligible && ghsBalance > 0;
+    const amountValue = parseFloat(withdrawAmount);
+    const hasSufficientBalance = !isNaN(amountValue) && amountValue > 0 && amountValue <= ghsBalance;
 
-    const handleWithdraw = () => {
-        onWithdraw(parseFloat(withdrawAmount), momoNumber);
-        setWithdrawAmount("");
+    const handleWithdraw = async () => {
+        if (isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance) {
+            return;
+        }
+
+        try {
+            await onWithdraw(amountValue);
+            setWithdrawAmount("");
+        } catch (error) {
+            // Error handled in parent via toast
+        }
     }
 
     return (
-        <Card className={!isEligible ? 'bg-muted/50' : ''}>
+        <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Withdraw Funds</CardTitle>
                 <CardDescription>
-                    {isEligible 
-                        ? "Transfer GHS to your MTN MoMo account."
-                        : `You need at least $${minWithdrawalUsd.toFixed(2)} USD to be eligible for withdrawals.`
-                    }
+                    Transfer GHS to your linked MTN MoMo account.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+                {!isEligible && (
+                    <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                            Note: You need a balance of at least ${minWithdrawalUsd.toFixed(2)} USD to withdraw.
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                <div className="p-4 rounded-lg bg-secondary/50 border flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <CheckCircle2 className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium">Linked MoMo Account</p>
+                            <p className="text-xs text-muted-foreground font-mono">{linkedMomoNumber}</p>
+                        </div>
+                    </div>
+                    <Button variant="ghost" size="sm" asChild className="text-xs h-8">
+                        <Link href="/dashboard/payout">Change</Link>
+                    </Button>
+                </div>
+
                 <div className="space-y-1">
                     <Label htmlFor="ghs-withdraw">Amount (GHS)</Label>
                     <Input 
@@ -47,30 +80,24 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         placeholder="0.00" 
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
-                        disabled={!canWithdraw || isWithdrawing}
+                        disabled={isWithdrawing}
+                        className="bg-background focus:ring-2 focus:ring-primary h-12 text-lg"
                     />
                     <p className="text-xs text-muted-foreground">Available for withdrawal: GHS {ghsBalance.toFixed(2)}</p>
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="momo-number">MTN MoMo Number</Label>
-                    <Input 
-                        id="momo-number" 
-                        type="tel" 
-                        placeholder="024XXXXXXX"
-                        value={momoNumber}
-                        onChange={e => setMomoNumber(e.target.value)}
-                        disabled={!canWithdraw || isWithdrawing}
-                    />
                 </div>
             </CardContent>
             <CardFooter>
                  <Button 
-                    className="w-full"
+                    className="w-full h-12 text-lg"
                     onClick={handleWithdraw}
-                    disabled={!canWithdraw || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > ghsBalance || !momoNumber || isWithdrawing}
+                    disabled={!isEligible || !hasSufficientBalance || isWithdrawing}
                 >
-                    {isWithdrawing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isWithdrawing ? 'Processing...' : `Withdraw GHS ${parseFloat(withdrawAmount) > 0 ? parseFloat(withdrawAmount).toFixed(2) : ''}`}
+                    {isWithdrawing ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                        <ArrowRight className="mr-2 h-5 w-5" />
+                    )}
+                    {isWithdrawing ? 'Processing...' : `Withdraw GHS ${hasSufficientBalance ? amountValue.toFixed(2) : ''}`}
                 </Button>
             </CardFooter>
         </Card>

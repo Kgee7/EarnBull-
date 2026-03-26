@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -23,6 +24,10 @@
           "type": "string",
           "description": "User's display name."
         },
+        "photoURL": {
+          "type": "string",
+          "description": "URL or data URI of the user's profile picture."
+        },
         "creationDate": {
           "type": "string",
           "description": "Date and time the user profile was created.",
@@ -39,6 +44,14 @@
         "ghsBalance": {
           "type": "number",
           "description": "The user's current balance in GHS."
+        },
+        "payoutDetails": {
+          "type": "object",
+          "description": "The user's linked payout information.",
+          "properties": {
+            "accountName": { "type": "string" },
+            "momoNumber": { "type": "string" }
+          }
         },
         "dailyGoals": {
           "type": "array",

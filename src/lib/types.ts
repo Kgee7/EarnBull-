@@ -1,3 +1,4 @@
+
 export type Goal = {
   name: string;
   steps: number;
@@ -14,14 +15,21 @@ export type Transaction = {
   userId?: string;
 };
 
+export type PayoutDetails = {
+  accountName: string;
+  momoNumber: string;
+};
+
 export type UserProfile = {
   id: string;
   googleId: string;
   email: string;
   displayName: string;
+  photoURL?: string;
   creationDate: string;
   bullCoinBalance: number;
   usdBalance: number;
   ghsBalance: number;
   dailyGoals?: Goal[];
+  payoutDetails?: PayoutDetails;
 };
