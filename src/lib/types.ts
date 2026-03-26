@@ -1,3 +1,4 @@
+
 export type Goal = {
   name: string;
   steps: number;
@@ -19,6 +20,7 @@ export type UserProfile = {
   googleId: string;
   email: string;
   displayName: string;
+  photoURL?: string;
   creationDate: string;
   bullCoinBalance: number;
   usdBalance: number;

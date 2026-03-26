@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +11,7 @@ import { DailyGoalsCard } from '@/components/dashboard/daily-goals-card';
 import { WalletCard } from '@/components/dashboard/wallet-card';
 import { ConversionCard } from '@/components/dashboard/conversion-card';
 import { WithdrawCard } from '@/components/dashboard/withdraw-card';
+import { ProfileCard } from '@/components/dashboard/profile-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import {
@@ -145,6 +147,16 @@ export function MainDashboard() {
       toast({ title: 'Goals Updated', description: 'Saved successfully.' });
     } catch (e) {
       toast({ title: "Update Failed", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user || !firestore || !userDocRef) return;
+    try {
+      await updateDoc(userDocRef, updates);
+    } catch (e) {
+      console.error("Failed to update profile", e);
+      throw e;
     }
   };
 
@@ -305,6 +317,10 @@ export function MainDashboard() {
           />
         </div>
         <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+          <ProfileCard
+            profile={userProfile}
+            onUpdateProfile={handleUpdateProfile}
+          />
           <ConversionCard
             bullCoins={bullCoins}
             usdBalance={usdBalance}
