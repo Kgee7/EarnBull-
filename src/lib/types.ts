@@ -15,6 +15,11 @@ export type Transaction = {
   userId?: string;
 };
 
+export type PayoutDetails = {
+  accountName: string;
+  momoNumber: string;
+};
+
 export type UserProfile = {
   id: string;
   googleId: string;
@@ -26,4 +31,5 @@ export type UserProfile = {
   usdBalance: number;
   ghsBalance: number;
   dailyGoals?: Goal[];
+  payoutDetails?: PayoutDetails;
 };

@@ -45,6 +45,14 @@
           "type": "number",
           "description": "The user's current balance in GHS."
         },
+        "payoutDetails": {
+          "type": "object",
+          "description": "The user's linked payout information.",
+          "properties": {
+            "accountName": { "type": "string" },
+            "momoNumber": { "type": "string" }
+          }
+        },
         "dailyGoals": {
           "type": "array",
           "description": "User-defined daily walking goals.",
