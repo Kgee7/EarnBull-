@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -150,7 +149,7 @@ export function MainDashboard() {
   };
 
   const handleConvertToUsd = async (bcAmount: number) => {
-    if (!user || !firestore || !userProfile || isNaN(bcAmount)) return;
+    if (!user || !firestore || !userProfile || isNaN(bcAmount) || bcAmount <= 0) return;
     const usdEarned = (bcAmount / 10) * USD_PER_10_BC;
     const userRef = doc(firestore, 'users', user.uid);
 
@@ -177,7 +176,7 @@ export function MainDashboard() {
   };
 
   const handleConvertToGhs = async (usdAmount: number) => {
-    if (!exchangeRate || !user || !firestore || isNaN(usdAmount)) return;
+    if (!exchangeRate || !user || !firestore || isNaN(usdAmount) || usdAmount <= 0) return;
     const ghsAmount = usdAmount * exchangeRate;
     const userRef = doc(firestore, 'users', user.uid);
     try {
@@ -203,10 +202,11 @@ export function MainDashboard() {
   };
 
   const handleWithdraw = async (ghsAmount: number, momoNumber: string) => {
-    if (!user || !firestore || !exchangeRate || !Number.isFinite(ghsAmount)) {
+    if (!user || !firestore || !exchangeRate || !Number.isFinite(ghsAmount) || ghsAmount <= 0) {
         toast({ title: "Invalid Amount", variant: "destructive" });
         return;
     }
+    
     setIsWithdrawing(true);
     try {
       const result = await processMomoWithdrawal({
@@ -214,6 +214,7 @@ export function MainDashboard() {
         momoNumber: momoNumber,
         transactionId: `wd-${user.uid}-${Date.now()}`,
       });
+      
       if (!result.success) throw new Error(result.message);
 
       const batch = writeBatch(firestore);

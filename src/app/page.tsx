@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { signInWithGoogle, handleRedirectResult } from '@/firebase/auth/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 function LoginSkeleton() {
   return (
@@ -42,14 +44,20 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (auth) {
-        handleRedirectResult(auth).then((loggedInUser) => {
+        handleRedirectResult(auth)
+          .then((loggedInUser) => {
             if (loggedInUser) {
-                router.push('/dashboard');
+              router.push('/dashboard');
             }
-        });
+          })
+          .catch((err) => {
+            console.error("Auth error:", err);
+            setError(err.message || "An error occurred during sign-in.");
+          });
     }
   }, [auth, router]);
 
@@ -62,7 +70,13 @@ export default function LoginPage() {
   const handleSignIn = async () => {
     if (auth) {
       setIsSigningIn(true);
-      await signInWithGoogle(auth);
+      setError(null);
+      try {
+        await signInWithGoogle(auth);
+      } catch (err: any) {
+        setError(err.message || "Failed to initiate Google sign-in.");
+        setIsSigningIn(false);
+      }
     }
   };
 
@@ -80,8 +94,7 @@ export default function LoginPage() {
                alt="EarnBull Logo" 
                width="100" 
                height="100" 
-               style={{ borderRadius: '20px' }}
-               className="shadow-sm object-cover"
+               className="shadow-sm object-cover rounded-[20px]"
              />
           </div>
           <CardTitle className="font-headline text-3xl font-bold text-primary">
@@ -93,6 +106,15 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Sign-in Error</AlertTitle>
+                <AlertDescription>
+                  {error}. If you see a 403 error, please ensure your email is added as a test user in Google Cloud Console.
+                </AlertDescription>
+              </Alert>
+            )}
             <Button size="lg" className="w-full" onClick={handleSignIn} disabled={isSigningIn}>
               <GoogleIcon className="mr-2 h-6 w-6" />
               Sign in with Google

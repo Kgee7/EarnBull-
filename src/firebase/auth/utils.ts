@@ -34,30 +34,31 @@ async function manageUserDocument(user: User, db: Firestore) {
 
   try {
     const userSnap = await getDoc(userRef);
-    // Using merge: true ensures we don't overwrite existing balances for old users
-    await setDoc(userRef, userData, { merge: true });
+    if (!userSnap.exists()) {
+      await setDoc(userRef, userData);
+    }
   } catch (e: any) {
-      const permissionError = new FirestorePermissionError({
-        path: userRef.path,
-        operation: 'write',
-        requestResourceData: userData,
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error("Firestore document management error:", e);
+      if (e.code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'write',
+          requestResourceData: userData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      }
       throw e;
   }
 }
 
 export async function signInWithGoogle(auth: Auth): Promise<void> {
   const provider = new GoogleAuthProvider();
-  // Adding specific scopes can sometimes help with permission issues
-  provider.addScope('profile');
-  provider.addScope('email');
-  
+  // Using simple redirect to avoid popup blocked issues
   try {
-    // Redirect is more robust than popup for many browser environments
     await signInWithRedirect(auth, provider);
   } catch (error: any) {
     console.error('Error during Google sign-in redirect:', error);
+    throw error;
   }
 }
 
@@ -71,6 +72,7 @@ export async function handleRedirectResult(auth: Auth): Promise<User | null> {
         }
     } catch (error: any) {
         console.error('Error handling redirect result:', error);
+        throw error;
     }
     return null;
 }
