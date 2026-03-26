@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CircleUser, LogOut } from 'lucide-react';
+import { CircleUser, LogOut, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 function Header({ user, profile }: { user: User; profile: UserProfile | null }) {
   const displayName = profile?.displayName || user.displayName || 'User';
@@ -55,13 +56,25 @@ function Header({ user, profile }: { user: User; profile: UserProfile | null }) 
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled className="text-xs text-muted-foreground">{user.email}</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{displayName}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <button className="w-full flex items-center" onClick={() => signOut(getAuth())}>
+              <Link href="/dashboard/profile" className="w-full flex items-center cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <button className="w-full flex items-center text-destructive focus:text-destructive" onClick={() => signOut(getAuth())}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </button>
@@ -93,8 +106,6 @@ function DashboardSkeleton() {
   )
 }
 
-import { getAuth } from 'firebase/auth';
-
 export default function DashboardLayout({
   children,
 }: {
@@ -116,12 +127,6 @@ export default function DashboardLayout({
       router.push('/');
     }
   }, [user, isUserLoading, router]);
-
-  const handleLogout = async () => {
-    if (auth) {
-      await signOut(auth);
-    }
-  };
 
   if (isUserLoading || !user) {
     return <DashboardSkeleton />;

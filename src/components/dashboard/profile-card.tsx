@@ -1,27 +1,36 @@
 
 "use client"
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Camera, Loader2 } from "lucide-react";
+import { User, Camera, Loader2, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile } from "@/lib/types";
 
 interface ProfileCardProps {
     profile: UserProfile | null;
     onUpdateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+    onResetProfile?: () => Promise<void>;
 }
 
-export function ProfileCard({ profile, onUpdateProfile }: ProfileCardProps) {
+export function ProfileCard({ profile, onUpdateProfile, onResetProfile }: ProfileCardProps) {
     const { toast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     const [displayName, setDisplayName] = useState(profile?.displayName || "");
     const [photoURL, setPhotoURL] = useState(profile?.photoURL || "");
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (profile) {
+            setDisplayName(profile.displayName);
+            setPhotoURL(profile.photoURL || "");
+        }
+    }, [profile]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -65,19 +74,39 @@ export function ProfileCard({ profile, onUpdateProfile }: ProfileCardProps) {
         }
     };
 
+    const handleReset = async () => {
+        if (!onResetProfile) return;
+        setIsResetting(true);
+        try {
+            await onResetProfile();
+            toast({
+                title: "Profile reset",
+                description: "Your profile information has been restored to defaults."
+            });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Reset failed",
+                description: "Could not reset profile information."
+            });
+        } finally {
+            setIsResetting(false);
+        }
+    }
+
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="font-headline">Account Profile</CardTitle>
-                <CardDescription>Manage your public profile and picture.</CardDescription>
+                <CardTitle className="font-headline">Profile Settings</CardTitle>
+                <CardDescription>Update your display name and profile picture.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative">
-                        <Avatar className="h-24 w-24">
-                            <AvatarImage src={photoURL} />
+                        <Avatar className="h-28 w-28">
+                            <AvatarImage src={photoURL} className="object-cover" />
                             <AvatarFallback>
-                                <User className="h-12 w-12 text-muted-foreground" />
+                                <User className="h-14 w-14 text-muted-foreground" />
                             </AvatarFallback>
                         </Avatar>
                         <Button
@@ -96,7 +125,9 @@ export function ProfileCard({ profile, onUpdateProfile }: ProfileCardProps) {
                             onChange={handleFileChange}
                         />
                     </div>
-                    <p className="text-xs text-muted-foreground">Click the camera to upload a new picture.</p>
+                    <p className="text-xs text-muted-foreground text-center">
+                        Upload a new profile picture. Recommended size: 500x500px.
+                    </p>
                 </div>
 
                 <div className="space-y-4">
@@ -111,16 +142,22 @@ export function ProfileCard({ profile, onUpdateProfile }: ProfileCardProps) {
                     </div>
                     <div className="space-y-1">
                         <Label>Email Address</Label>
-                        <Input value={profile?.email || ""} disabled className="bg-muted" />
-                        <p className="text-xs text-muted-foreground">Your email is used for account identification.</p>
+                        <Input value={profile?.email || ""} disabled className="bg-muted cursor-not-allowed" />
+                        <p className="text-xs text-muted-foreground italic">Your email address is managed by your account provider.</p>
                     </div>
                 </div>
             </CardContent>
-            <CardFooter>
-                <Button className="w-full" onClick={handleSave} disabled={isSaving}>
+            <CardFooter className="flex flex-col gap-2">
+                <Button className="w-full" onClick={handleSave} disabled={isSaving || isResetting}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Profile Changes
+                    Save Changes
                 </Button>
+                {onResetProfile && (
+                    <Button variant="outline" className="w-full" onClick={handleReset} disabled={isSaving || isResetting}>
+                        {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                        Reset to Defaults
+                    </Button>
+                )}
             </CardFooter>
         </Card>
     );
