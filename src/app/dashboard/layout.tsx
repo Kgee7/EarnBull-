@@ -72,7 +72,7 @@ function Header({ user, profile }: { user: User; profile: UserProfile | null }) 
       <div className="flex items-center gap-4">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:flex">
+            <Button variant="ghost" size="icon">
               <Menu className="h-6 w-6" />
               <span className="sr-only">Toggle menu</span>
             </Button>
@@ -88,15 +88,7 @@ function Header({ user, profile }: { user: User; profile: UserProfile | null }) 
           href="/dashboard"
           className="flex items-center gap-2 text-lg font-semibold"
         >
-           <img 
-               src="/logo.png" 
-               alt="EarnBull Logo" 
-               width="32" 
-               height="32" 
-               style={{ borderRadius: '6px' }}
-               className="shadow-sm object-cover"
-             />
-          <span className="hidden sm:inline font-headline text-primary">EarnBull</span>
+          <span className="font-headline text-primary">EarnBull</span>
         </Link>
       </div>
       <div className="flex items-center gap-4">
@@ -104,7 +96,7 @@ function Header({ user, profile }: { user: User; profile: UserProfile | null }) 
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={photoURL} />
+                <AvatarImage src={photoURL} className="object-cover" />
                 <AvatarFallback>
                   <CircleUser className="h-5 w-5" />
                 </AvatarFallback>
