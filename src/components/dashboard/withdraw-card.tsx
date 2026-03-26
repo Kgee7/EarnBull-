@@ -35,7 +35,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
             setWithdrawAmount("");
             setMomoNumber("");
         } catch (error) {
-            // Error handled in parent
+            // Error handled in parent via toast
         }
     }
 
@@ -52,7 +52,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                     <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
                         <AlertTriangle className="h-4 w-4" />
                         <AlertDescription className="text-xs">
-                            You need at least ${minWithdrawalUsd.toFixed(2)} USD to be eligible for withdrawals.
+                            Note: You need a balance of at least ${minWithdrawalUsd.toFixed(2)} USD to withdraw.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -65,7 +65,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         value={withdrawAmount}
                         onChange={e => setWithdrawAmount(e.target.value)}
                         disabled={isWithdrawing}
-                        className="bg-background opacity-100"
+                        className="bg-background focus:ring-2 focus:ring-primary"
                     />
                     <p className="text-xs text-muted-foreground">Available for withdrawal: GHS {ghsBalance.toFixed(2)}</p>
                 </div>
@@ -78,7 +78,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         value={momoNumber}
                         onChange={e => setMomoNumber(e.target.value)}
                         disabled={isWithdrawing}
-                        className="bg-background opacity-100"
+                        className="bg-background focus:ring-2 focus:ring-primary"
                     />
                 </div>
             </CardContent>

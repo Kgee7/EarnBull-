@@ -202,15 +202,16 @@ export function MainDashboard() {
   };
 
   const handleWithdraw = async (ghsAmount: number, momoNumber: string) => {
-    if (!user || !firestore || !exchangeRate || !Number.isFinite(ghsAmount) || ghsAmount <= 0) {
-        toast({ title: "Invalid Amount", variant: "destructive" });
+    const amountVal = Number(ghsAmount);
+    if (!user || !firestore || !exchangeRate || isNaN(amountVal) || amountVal <= 0) {
+        toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
         return;
     }
     
     setIsWithdrawing(true);
     try {
       const result = await processMomoWithdrawal({
-        amount: ghsAmount,
+        amount: amountVal,
         momoNumber: momoNumber,
         transactionId: `wd-${user.uid}-${Date.now()}`,
       });
@@ -218,11 +219,11 @@ export function MainDashboard() {
       if (!result.success) throw new Error(result.message);
 
       const batch = writeBatch(firestore);
-      batch.update(doc(firestore, 'users', user.uid), { ghsBalance: increment(-ghsAmount) });
+      batch.update(doc(firestore, 'users', user.uid), { ghsBalance: increment(-amountVal) });
       batch.set(doc(collection(firestore, 'users', user.uid, 'transactions')), {
         userId: user.uid,
         type: 'withdraw',
-        amount: -ghsAmount,
+        amount: -amountVal,
         currency: 'GHS',
         date: new Date().toISOString(),
         description: `Withdrawal to ${momoNumber}`,
@@ -230,8 +231,8 @@ export function MainDashboard() {
       batch.set(doc(collection(firestore, 'users', user.uid, 'withdrawalRequests')), {
         userId: user.uid,
         requestDate: new Date().toISOString(),
-        amountGHS: ghsAmount,
-        amountUSD: ghsAmount / exchangeRate,
+        amountGHS: amountVal,
+        amountUSD: amountVal / exchangeRate,
         exchangeRate: exchangeRate,
         momoNumber: momoNumber,
         status: 'completed',
