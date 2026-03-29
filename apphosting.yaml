@@ -1,7 +1,18 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
-
+run:
+  command: "npm run start"
+build:
+  command: "npm run build"
+requires:
+  server: true
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  availability: "private"
+  environmentVariables:
+    - variable: "API_KEY"
+      value: "your-api-key"
+    - variable: "API_SECRET"
+      value: "your-api-secret"

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react";
@@ -9,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
 
 interface WithdrawCardProps {
     ghsBalance: number;
@@ -20,23 +20,42 @@ interface WithdrawCardProps {
 }
 
 export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing, linkedMomoNumber }: WithdrawCardProps) {
+    const { toast } = useToast();
     const [withdrawAmount, setWithdrawAmount] = useState("");
     
     const isEligible = usdBalance >= minWithdrawalUsd;
     const amountValue = parseFloat(withdrawAmount);
-    const hasSufficientBalance = !isNaN(amountValue) && amountValue > 0 && amountValue <= ghsBalance;
 
     const handleWithdraw = async () => {
-        if (isNaN(amountValue) || amountValue <= 0 || amountValue > ghsBalance) {
+        if (isNaN(amountValue) || amountValue <= 0) {
+            toast({
+                title: "Invalid Amount",
+                description: "Please enter a valid amount to withdraw.",
+                variant: "destructive"
+            });
             return;
         }
 
-        try {
-            await onWithdraw(amountValue);
-            setWithdrawAmount("");
-        } catch (error) {
-            // Error handled in parent via toast
+        if (amountValue > ghsBalance) {
+            toast({
+                title: "Insufficient Balance",
+                description: "The amount entered exceeds your available GHS balance.",
+                variant: "destructive"
+            });
+            return;
         }
+
+        if (!isEligible) {
+            toast({
+                title: "Minimum Withdrawal",
+                description: `You must have at least $${minWithdrawalUsd.toFixed(2)} USD total balance to withdraw.`,
+                variant: "destructive"
+            });
+            return;
+        }
+
+        await onWithdraw(amountValue);
+        setWithdrawAmount("");
     }
 
     return (
@@ -44,7 +63,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
             <CardHeader>
                 <CardTitle className="font-headline">Withdraw Funds</CardTitle>
                 <CardDescription>
-                    Transfer GHS to your linked MTN MoMo account.
+                    Transfer GHS to your linked MoMo account.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -63,7 +82,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                             <CheckCircle2 className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <p className="text-sm font-medium">Linked MoMo Account</p>
+                            <p className="text-sm font-medium">Linked Account</p>
                             <p className="text-xs text-muted-foreground font-mono">{linkedMomoNumber}</p>
                         </div>
                     </div>
@@ -90,14 +109,14 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                  <Button 
                     className="w-full h-12 text-lg"
                     onClick={handleWithdraw}
-                    disabled={!isEligible || !hasSufficientBalance || isWithdrawing}
+                    disabled={isWithdrawing}
                 >
                     {isWithdrawing ? (
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     ) : (
                         <ArrowRight className="mr-2 h-5 w-5" />
                     )}
-                    {isWithdrawing ? 'Processing...' : `Withdraw GHS ${hasSufficientBalance ? amountValue.toFixed(2) : ''}`}
+                    {isWithdrawing ? 'Processing...' : `Withdraw GHS ${!isNaN(amountValue) ? amountValue.toFixed(2) : ''}`}
                 </Button>
             </CardFooter>
         </Card>

@@ -18,6 +18,7 @@ export type Transaction = {
 export type PayoutDetails = {
   accountName: string;
   momoNumber: string;
+  momoNetwork: string;
 };
 
 export type UserProfile = {

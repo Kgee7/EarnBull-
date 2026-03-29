@@ -12,6 +12,7 @@ import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import Link from "next/link";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function PayoutPage() {
     const { toast } = useToast();
@@ -27,11 +28,13 @@ export default function PayoutPage() {
 
     const [accountName, setAccountName] = useState("");
     const [momoNumber, setMomoNumber] = useState("");
+    const [momoNetwork, setMomoNetwork] = useState("MTN");
 
     useEffect(() => {
         if (profile?.payoutDetails) {
             setAccountName(profile.payoutDetails.accountName || "");
             setMomoNumber(profile.payoutDetails.momoNumber || "");
+            setMomoNetwork(profile.payoutDetails.momoNetwork || "MTN");
         }
     }, [profile]);
 
@@ -42,7 +45,8 @@ export default function PayoutPage() {
             await updateDoc(userDocRef, {
                 payoutDetails: {
                     accountName,
-                    momoNumber
+                    momoNumber,
+                    momoNetwork
                 }
             });
             toast({
@@ -63,6 +67,7 @@ export default function PayoutPage() {
     const handleReset = () => {
         setAccountName("");
         setMomoNumber("");
+        setMomoNetwork("MTN");
         toast({
             title: "Fields cleared",
             description: "You can now enter new payout information."
@@ -78,7 +83,8 @@ export default function PayoutPage() {
     }
 
     const hasChanges = accountName !== (profile?.payoutDetails?.accountName || "") || 
-                        momoNumber !== (profile?.payoutDetails?.momoNumber || "");
+                        momoNumber !== (profile?.payoutDetails?.momoNumber || "") ||
+                        momoNetwork !== (profile?.payoutDetails?.momoNetwork || "MTN");
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -106,7 +112,20 @@ export default function PayoutPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="account-name">MTN Account Name</Label>
+                        <Label htmlFor="network">Mobile Money Network</Label>
+                        <Select value={momoNetwork} onValueChange={setMomoNetwork}>
+                            <SelectTrigger id="network" className="h-11">
+                                <SelectValue placeholder="Select Network" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="MTN">MTN Mobile Money</SelectItem>
+                                <SelectItem value="VODAFONE">Vodafone Cash</SelectItem>
+                                <SelectItem value="AT">AirtelTigo Money</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="account-name">Account Name</Label>
                         <Input 
                             id="account-name" 
                             placeholder="e.g. John Doe"
@@ -117,7 +136,7 @@ export default function PayoutPage() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="momo-number">MTN Mobile Money Number</Label>
+                        <Label htmlFor="momo-number">Mobile Money Number</Label>
                         <Input 
                             id="momo-number" 
                             type="tel" 
@@ -157,7 +176,7 @@ export default function PayoutPage() {
 
             <div className="bg-muted/50 p-4 rounded-lg text-xs text-muted-foreground">
                 <p className="font-semibold mb-1">Security Note:</p>
-                <p>Ensure your account name matches the name registered with MTN to avoid transaction delays or rejection.</p>
+                <p>Ensure your account name matches the name registered with your mobile network to avoid transaction delays or rejection.</p>
             </div>
         </div>
     );

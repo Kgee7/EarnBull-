@@ -1,4 +1,3 @@
-
 // Helper to get the API Key safely
 function getApiKey() {
   // 1. Try the system-provided config string (injected by App Hosting)
