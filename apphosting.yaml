@@ -11,7 +11,7 @@ runConfig:
   # more instances in response to increased traffic.
   maxInstances: 1
   availability: "private"
-  environmentVariables:
+  env:
     - variable: "MOMO_TARGET_ENVIRONMENT"
       value: "sandbox"
     - variable: "MOMO_BASE_URL"
