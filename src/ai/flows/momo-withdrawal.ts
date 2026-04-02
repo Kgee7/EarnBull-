@@ -21,7 +21,7 @@ export const momoWithdrawal = ai.defineFlow(
   },
   async (payload) => {
     await ai.generate({
-      input: `You are a helpful AI assistant that helps users withdraw money from their mobile money accounts. You are about to withdraw ${payload.amount} GHS to ${payload.phoneNumber} on the ${payload.network} network. Please confirm that you want to proceed.`,
+      prompt: `You are a helpful AI assistant that helps users withdraw money from their mobile money accounts. You are about to withdraw ${payload.amount} GHS to ${payload.phoneNumber} on the ${payload.network} network. Please confirm that you want to proceed.`,
       config: {
         temperature: 0.5,
       }
