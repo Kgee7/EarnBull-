@@ -23,6 +23,13 @@ async function getMomoToken(): Promise<string> {
   const subscriptionKey = process.env.MOMO_SUBSCRIPTION_KEY;
   const baseUrl = process.env.MOMO_BASE_URL || 'https://sandbox.momodeveloper.mtn.com';
 
+  console.log('[MoMo Debug] Checking variables:', {
+    hasApiUser: !!apiUser,
+    hasApiKey: !!apiKey,
+    hasSubKey: !!subscriptionKey,
+    baseUrl
+  });
+
   if (!apiUser || !apiKey || !subscriptionKey) {
     const missing = [];
     if (!apiUser) missing.push('MOMO_API_USER');
