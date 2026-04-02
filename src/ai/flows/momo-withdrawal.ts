@@ -2,6 +2,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {webcrypto} from 'crypto';
+import {transferFunds} from '@/lib/momo';
 
 const MomoWithdrawalInputSchema = z.object({
   amount: z.number().describe('The amount of GHS to withdraw.'),
@@ -26,7 +27,23 @@ export const momoWithdrawal = ai.defineFlow(
         temperature: 0.5,
       }
     });
-    const transactionId = webcrypto.randomUUID();
+    let transactionId = '';
+
+    try {
+      if (payload.network.toUpperCase() === 'MTN') {
+        transactionId = await transferFunds({
+          amount: payload.amount,
+          phoneNumber: payload.phoneNumber,
+          network: payload.network,
+        });
+      } else {
+        console.info('Non-MTN network used, simulating withdrawal');
+        transactionId = webcrypto.randomUUID();
+      }
+    } catch (error: any) {
+      console.error('MoMo Withdrawal Flow Error:', error);
+      throw new Error(`Failed to process withdrawal: ${error.message || 'Unknown error'}`);
+    }
 
     return {
       transactionId,
