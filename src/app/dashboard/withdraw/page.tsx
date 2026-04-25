@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
-import { momoWithdrawal } from '@/ai/flows/momo-withdrawal';
+import { runMomoWithdrawal } from '@/ai/flows/momo-withdrawal';
 import type { Transaction, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { WithdrawCard } from '@/components/dashboard/withdraw-card';
@@ -66,11 +66,16 @@ export default function WithdrawPage() {
     
     setIsWithdrawing(true);
     try {
-      const result = await momoWithdrawal({
+      const result = await runMomoWithdrawal({
         amount: amountVal,
         phoneNumber: payoutDetails.momoNumber,
         network: payoutDetails.momoNetwork,
       });
+      
+      if (result.error) {
+          toast({ title: "Withdrawal Failed", description: result.error, variant: "destructive" });
+          return;
+      }
       
       const batch = writeBatch(firestore);
       batch.update(doc(firestore, 'users', user.uid), { ghsBalance: increment(-amountVal) });
