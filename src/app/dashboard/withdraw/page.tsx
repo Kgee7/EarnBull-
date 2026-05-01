@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getUsdToGhsExchangeRate } from '@/ai/flows/usd-to-ghs-exchange';
-import { runMomoWithdrawal } from '@/ai/flows/momo-withdrawal';
+import { runPaystackWithdrawal } from '@/ai/flows/paystack-withdrawal';
 import type { Transaction, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { WithdrawCard } from '@/components/dashboard/withdraw-card';
@@ -59,17 +59,24 @@ export default function WithdrawPage() {
         return;
     }
 
-    if (!payoutDetails?.momoNumber || !payoutDetails?.momoNetwork) {
+    if (!payoutDetails?.method || (payoutDetails.method === 'momo' && !payoutDetails.momoNumber) || (payoutDetails.method === 'bank' && !payoutDetails.accountNumber)) {
         toast({ title: "Payout Details Missing", description: "Please link your payout details first.", variant: "destructive" });
         return;
     }
     
     setIsWithdrawing(true);
     try {
-      const result = await runMomoWithdrawal({
+      const recipientType = payoutDetails.method === 'bank' ? 'ghipss' : 'mobile_money';
+      const accountNumber = payoutDetails.method === 'bank' ? payoutDetails.accountNumber : payoutDetails.momoNumber;
+      // We stored bankCode as the code directly. For MoMo, momoNetwork is something like "MTN".
+      // Let's resolve the MoMo bank code here or in the helper. We'll pass the network directly.
+      const bankCode = payoutDetails.method === 'bank' ? payoutDetails.bankCode : payoutDetails.momoNetwork;
+      
+      const result = await runPaystackWithdrawal({
         amount: amountVal,
-        phoneNumber: payoutDetails.momoNumber,
-        network: payoutDetails.momoNetwork,
+        recipientType,
+        accountNumber: accountNumber!,
+        bankCode: bankCode!,
       });
       
       if (result.error) {
@@ -129,7 +136,7 @@ export default function WithdrawPage() {
         </div>
       </div>
 
-      {!payoutDetails?.momoNumber ? (
+      {!payoutDetails?.method || (payoutDetails.method === 'momo' && !payoutDetails.momoNumber) || (payoutDetails.method === 'bank' && !payoutDetails.accountNumber) ? (
           <Card className="border-accent bg-accent/5">
               <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-accent-foreground">
@@ -153,7 +160,7 @@ export default function WithdrawPage() {
             minWithdrawalUsd={MIN_WITHDRAWAL_USD}
             onWithdraw={handleWithdraw}
             isWithdrawing={isWithdrawing}
-            linkedMomoNumber={payoutDetails.momoNumber}
+            linkedAccountDisplay={payoutDetails.method === 'bank' ? `Bank: ${payoutDetails.accountNumber}` : `MoMo: ${payoutDetails.momoNumber}`}
           />
       )}
       

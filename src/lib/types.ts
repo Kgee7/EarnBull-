@@ -15,10 +15,20 @@ export type Transaction = {
   userId?: string;
 };
 
+export type PayoutMethod = "momo" | "bank" | "card";
+
 export type PayoutDetails = {
+  method: PayoutMethod;
   accountName: string;
-  momoNumber: string;
-  momoNetwork: string;
+  // MoMo
+  momoNumber?: string;
+  momoNetwork?: string;
+  // Bank
+  bankName?: string;
+  bankCode?: string;
+  accountNumber?: string;
+  // Card
+  authorizationCode?: string;
 };
 
 export type UserProfile = {

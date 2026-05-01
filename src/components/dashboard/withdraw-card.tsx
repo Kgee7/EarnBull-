@@ -16,10 +16,10 @@ interface WithdrawCardProps {
     minWithdrawalUsd: number;
     onWithdraw: (ghsAmount: number) => Promise<void>;
     isWithdrawing: boolean;
-    linkedMomoNumber: string;
+    linkedAccountDisplay: string;
 }
 
-export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing, linkedMomoNumber }: WithdrawCardProps) {
+export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithdraw, isWithdrawing, linkedAccountDisplay }: WithdrawCardProps) {
     const { toast } = useToast();
     const [withdrawAmount, setWithdrawAmount] = useState("");
     
@@ -83,7 +83,7 @@ export function WithdrawCard({ ghsBalance, usdBalance, minWithdrawalUsd, onWithd
                         </div>
                         <div>
                             <p className="text-sm font-medium">Linked Account</p>
-                            <p className="text-xs text-muted-foreground font-mono">{linkedMomoNumber}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{linkedAccountDisplay}</p>
                         </div>
                     </div>
                     <Button variant="ghost" size="sm" asChild className="text-xs h-8">
